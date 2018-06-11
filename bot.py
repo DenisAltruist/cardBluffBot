@@ -182,13 +182,13 @@ class Game:
         else:
             return cardSet + ', ' + str(tp) + cardSuits[suit]
     
-    def callToMove(self):
-        nameSurname = self.firstNameById[self.id[self.currPlayer]] + " " + self.lastNameById[self.id[self.currPlayer]]
-
-        link = '<a href="tg://user?id=' +  str(self.id[self.currPlayer]) + '">' + nameSurname + '</a>'
-        msg =  link + ', ' + 'your turn'
-        bot.send_message(self.chat_id, msg, parse_mode = 'HTML')
-        
+    def getLinkedName(self, index):
+        nameSurname = self.firstNameById[self.id[index]] + " " + self.lastNameById[self.id[index]]
+        linkedName = '<a href="tg://user?id=' +  str(self.id[index]) + '">' + nameSurname + '</a>'
+        return linkedName
+    
+    def callToMove(self, index):
+        bot.send_message(self.chat_id, self.getLinkedName(index) + ', your turn', parse_mode = 'HTML')
 
     def startRound(self):
         shuffle(self.id)
@@ -205,7 +205,7 @@ class Game:
             bot.send_message(chatsById[currId], cardSet)
         self.isFirstMove = True
         self.currPlayer = 0
-        self.callToMove()
+        self.callToMove(self.currPlayer)
         self.cntOfCardsByRang.clear()
         for i in range(self.numberOfCardsInGame):
             if self.cntOfCardsByRang.get(self.cardDeck[i] % 13) is None:
@@ -220,15 +220,16 @@ class Game:
         if self.isStarted:
             self.printOut("The game has started yet")
             return
-        if self.numberOfPlayers <= 1:
+        if self.numberOfPlayers < 1:
             self.printOut("Not enough players to play")
             return
         listOfNonInitialized = ''
-        for currId in self.id:
+        for index in range(0, len(self.id)):
+            currId = self.id[index]
             if chatsById.get(currId) == None:
-                listOfNonInitialized += self.firstNameById[currId] + " " + self.lastNameById[currId] + ', '
+                listOfNonInitialized += self.getLinkedName(index) + ', '
         if listOfNonInitialized != '':
-            self.printOut(listOfNonInitialized + "please, send 'go' to the CardBluff bot")
+            bot.send_message(self.chat_id, listOfNonInitialized + "please, send 'go' to the CardBluff bot", parse_mode = 'HTML')
             return
         self.printOut("The game was started")
         self.isStarted = True
@@ -275,7 +276,7 @@ class Game:
         self.currPlayer += 1
         if self.currPlayer == len(self.alivePlayers):
             self.currPlayer = 0
-        self.callToMove()
+        self.callToMove(self.currPlayer)
     
     def addCardToPlayer(self, id):
         self.isLooser[id] = 1
@@ -350,7 +351,7 @@ class Game:
 
     def finish(self):
         isJoined[self.alivePlayers[0]] = 0
-        self.printOut("The winner is " + self.firstNameById[self.alivePlayers[0]] + " " + self.lastNameById[self.alivePlayers[0]])
+        bot.send_message(self.chat_id, 'The winner is ' + self.getLinkedName(0), parse_mode = 'HTML')
 
     def finishRound(self):
         self.reveal()
@@ -367,6 +368,8 @@ class Game:
 
     def getChat(self, chatId):
         self.chat_id = chatId
+    
+
 
 
 def register(message):
@@ -406,6 +409,7 @@ def getHelp(message):
     helplist += "3 - Three of a kind(set): (/m 3K, three kings)\n"
     helplist += "4 - Straight (five cards of sequential rank, like 23456, you have to provide highest card): (/m 46, straight up to six)\n"
     helplist += "5 - Flush (five cards with same suit, you have to provide highest card(it must be in hand!): (/m 5K0, heart flush up to king)\n"
+    helplist += "Also, if the higher card is less then the hand is higher (not in like poker hands)\n"
     helplist += "6 - Full house (three cards of one rank and two cards of another one rank): (/m 6JK, three jacks and two kings)\n"
     helplist += "7 - Four of a kind (four cards of one rank): (/m 70, four tens)\n"
     helplist += "8 - Straight flush (five cards of sequential rank and same suit, you have to provide highest card and suit): (/m 8J, Straight flush up to jack)\n"
@@ -490,4 +494,3 @@ def getm(message):
         chatsById[message.from_user.id] = message.chat.id
 
 bot.polling()
-  
