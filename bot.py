@@ -377,8 +377,14 @@ def start(message):
     register(message)
     bot.send_message(message.chat.id, "Welcome to the CardBluff bot")
 
+@bot.message_handler(commands=['rules'])
+def getRules(message):
+    rules = "There are some funny rules here\n"
+    register(message)
+    bot.send_message(message.chat.id, rules)
+
 @bot.message_handler(commands=['help'])
-def help(message):
+def getHelp(message):
     helplist = 'Suits:\n'
     helplist += '0 - ' + cardSuits[0] + '\n' + '1 - ' + cardSuits[1] + '\n'
     helplist += '2 - ' + cardSuits[2] + '\n' + '3 - ' + cardSuits[3] + '\n'
