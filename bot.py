@@ -241,7 +241,6 @@ class Game:
         self.isFirstMove = False
 
     def isCorrectMove(self, s):
-        print(s)
         if (s.lower() == "reveal"):
             return True
         if len(s) == 0:
