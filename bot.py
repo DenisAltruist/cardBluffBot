@@ -14,6 +14,7 @@ isJoined = dict()
 cardSuits = [u'\U00002665', u'\U00002666', u'\U00002660', u'\U00002663']
 neutral = u'\U0001F610'
 
+
 def isCorrectCard(c):
     if not (c == 'J' or c == 'Q' or c == 'K' or c == 'A' or c == '0' or (c >= '2' and c <= '9')):
         return False
@@ -93,6 +94,8 @@ class Game:
         if self.id.count(from_user.id) > 0:
             self.printOut(from_user.first_name + " " + from_user.last_name + ", " + "you have already joined")
             return
+        if self.numberOfPlayers == config.maxNumberOfPlayers:
+            self.printOut("The maximum number of players has been reached")
         if self.isStarted:
             self.printOut("You can't join to the started game")
             return
@@ -217,7 +220,7 @@ class Game:
         if self.isStarted:
             self.printOut("The game has started yet")
             return
-        if self.numberOfPlayers < 1:
+        if self.numberOfPlayers <= 1:
             self.printOut("Not enough players to play")
             return
         listOfNonInitialized = ''
@@ -376,13 +379,22 @@ def start(message):
     register(message)
     bot.send_message(message.chat.id, "Welcome to the CardBluff bot")
 
-@bot.message_handler(commands=['rules'])
+@bot.message_handler(commands=['help'])
 def getRules(message):
-    rules = "There are some funny rules here\n"
+    rules = "Rules:\n"
+    rules += "The game consists of few rounds. In the start of the game, each player has one card.\n"
+    rules += "In the moment of playing each player has from one to five cards only knows for him\n"
+    rules += "If you will have more than five cards - you will be a loser.\n"
+    rules += "There is some order of moves in each round. If player has to move, he has to say new hand(it has to be higher, than current)\n"
+    rules += "or say 'reveal' to check the current hand (/m - command to move, /r - command to 'reveal'). If player choose the first, he has to choose poker hand\n"
+    rules += "(you can find all hands and how to move using /hands), hand must be higher than the previous one. After this, the move passes to another player\n"
+    rules += "It will be a player who say 'reveal'. After that all players reveal their hands and round will be finished.\n"
+    rules += "If it will be a current hand, then the current player will get an additional card in new round.\n"
+    rules += "Else, the previous player will get an additional card in new round. The game goes until there is only one player\n"
     register(message)
     bot.send_message(message.chat.id, rules)
 
-@bot.message_handler(commands=['help'])
+@bot.message_handler(commands=['hands'])
 def getHelp(message):
     helplist = 'Suits:\n'
     helplist += '0 - ' + cardSuits[0] + '\n' + '1 - ' + cardSuits[1] + '\n'
