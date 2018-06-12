@@ -11,9 +11,12 @@ bot = telebot.TeleBot(config.token)
 chatsById = dict()
 gamesByChatId = dict()
 isJoined = dict()
+firstNameById = dict()
+lastNameById = dict()
+users = dict()
 cardSuits = [u'\U00002665', u'\U00002666', u'\U00002660', u'\U00002663']
 neutral = u'\U0001F610'
-
+typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "J": 9, "Q": 10, "K": 11, "A": 12}
 
 def isCorrectCard(c):
     if not (c == 'J' or c == 'Q' or c == 'K' or c == 'A' or c == '0' or (c >= '2' and c <= '9')):
@@ -39,15 +42,11 @@ class Game:
         self.message_id = -1
         self.currHand = [-1, -1, -1]
         self.numberOfCards = dict()
-        self.firstNameById = dict()
-        self.lastNameById = dict()
         self.cntOfCardsByRang = dict()
         self.isLooser = dict()
-        self.typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "J": 9, "Q": 10, "K": 11, "A": 12}
         self.currPlayer = 0
         self.cardDeck = [i for i in range(52)]
 
-        
         
     def isHigherHand(self, nextHand):
         if nextHand[0] < self.currHand[0]:
@@ -63,64 +62,58 @@ class Game:
     def parseStringToHand(self, s):
         tp = int(s[0])
         if (tp <= 1) or (tp >= 3 and tp <= 4) or (tp == 7):
-            return [tp, self.typeOfCard[s[1]], 0]
+            return [tp, typeOfCard[s[1]], 0]
         elif tp == 2:
-            firstPairType = self.typeOfCard[s[1]]
-            secondPairType = self.typeOfCard[s[2]]
+            firstPairType = typeOfCard[s[1]]
+            secondPairType = typeOfCard[s[2]]
             if firstPairType < secondPairType:
                 firstPairType, secondPairType = secondPairType, firstPairType
             return [tp, firstPairType, secondPairType]
         elif tp == 5:
-            return [tp, self.typeOfCard[s[1]], int(s[2])]
+            return [tp, typeOfCard[s[1]], int(s[2])]
         elif tp == 6:
-            return [tp, self.typeOfCard[s[1]], self.typeOfCard[s[2]]]
+            return [tp, typeOfCard[s[1]], typeOfCard[s[2]]]
         elif tp == 8:
-            return [tp, self.typeOfCard[s[1]], int(s[2])]
+            return [tp, typeOfCard[s[1]], int(s[2])]
 
     
     def getListOfPlayers(self):
         self.playlist = ''
         for currentId in self.id:
-            self.playlist = self.playlist + self.firstNameById[currentId] + ' ' + self.lastNameById[currentId] + '\n'
+            self.playlist = self.playlist + self.getLinkedName(currentId) + '\n'
         return 'List of players: ' + str(self.numberOfPlayers) + '\n' + self.playlist
         
     def checkPlaylist(self):
-        bot.edit_message_text(chat_id = self.chat_id, message_id = self.message_id, text = self.getListOfPlayers(), reply_markup = self.keyboard)
+        bot.edit_message_text(chat_id = self.chat_id, message_id = self.message_id, text = self.getListOfPlayers(), reply_markup = self.keyboard, parse_mode='HTML')
     
-    def getNameSurname(self, first_name, last_name):
-        res = ''
-        if not first_name is None:
-            res = res + first_name
-        if not last_name is None:
-            if res != '':
-                res = res + ' ' + last_name
-            else:
-                res = last_name
+    def getName(self, id):
+        res = firstNameById[id]
+        if lastNameById[id] != '':
+            res = res + ' ' + lastNameById[id]
         return res
     
     def addPlayer(self, message, from_user):
         if isJoined.get(from_user.id) == 1:
-            self.printOut("You can play only one game at a time")
+            self.printOut(self.getName(from_user.id) + ", you can play only one game at a time")
             return
         if self.id.count(from_user.id) > 0:
-            self.printOut(from_user.first_name + " " + from_user.last_name + ", " + "you have already joined")
+            self.printOut(self.getName(from_user.id) + ", you have already joined")
             return
         if self.numberOfPlayers == config.maxNumberOfPlayers:
-            self.printOut("The maximum number of players has been reached")
+            self.printOut(self.getName(from_user.id) + ", the maximum number of players has been reached")
         if self.isStarted:
-            self.printOut("You can't join to the started game")
+            self.printOut(self.getName(from_user.id) + ", you can't join to the started game")
             return
 
         isJoined[from_user.id] = 1
         self.numberOfCards[from_user.id] = 1
         self.id.append(from_user.id)
         self.numberOfPlayers += 1
-        self.firstNameById[from_user.id] = from_user.first_name
-        self.lastNameById[from_user.id] = from_user.last_name
+
         self.message_id = message.message_id
         self.chat_id = message.chat.id
         
-        self.playlist = self.playlist + '\n' + '@' + self.getNameSurname(from_user.first_name, from_user.last_name)
+        self.playlist = self.playlist + '\n' + self.getLinkedName(from_user.id)
         self.checkPlaylist()
     
     def printNumberOfCards(self):
@@ -129,7 +122,7 @@ class Game:
             return
         res = ''
         for key, value in self.numberOfCards.items():
-            res = res + self.firstNameById[key] + " " + self.lastNameById[key] + ": "
+            res = res + self.getName(key) + ": "
             if value > 5:
                 res = res + "Lost"
             else: 
@@ -140,7 +133,7 @@ class Game:
         self.printOut("Number of cards:\n" + res)
 
     def printOut(self, message):
-        bot.send_message(self.chat_id, message)
+        bot.send_message(self.chat_id, message, parse_mode='HTML')
     
     def createGame(self, message, keyboard):
         if self.isCreated:
@@ -153,14 +146,15 @@ class Game:
         self.message_id = message.message_id
         
         
-        bot.send_message(self.chat_id, self.getListOfPlayers(), reply_markup = self.keyboard)
+        bot.send_message(self.chat_id, self.getListOfPlayers(), reply_markup = self.keyboard, parse_mode='HTML')
    
     def removePlayer(self, message):
+        curId = message.from_user.id
         if self.isCreated == False:
             self.printOut("The game hasn't created yet")
             return
-        if self.id.count(message.from_user.id) == 0:
-            self.printOut(message.from_user.first_name + " " + message.from_user.last_name + ", " + "you haven't joined yet")
+        if self.id.count(curId) == 0:
+            self.printOut(self.getLinkedName(self.getName(curId)) + ", " + "you haven't joined yet")
             return
         if self.isStarted:
             self.printOut("You can't leave from the started game")
@@ -193,13 +187,13 @@ class Game:
         else:
             return cardSet + ', ' + str(tp) + cardSuits[suit]
     
-    def getLinkedName(self, index):
-        nameSurname = self.firstNameById[self.id[index]] + " " + self.lastNameById[self.id[index]]
-        linkedName = '<a href="tg://user?id=' +  str(self.id[index]) + '">' + nameSurname + '</a>'
+    def getLinkedName(self, id):
+        nameSurname = self.getName(id)
+        linkedName = '<a href="tg://user?id=' +  str(id) + '">' + nameSurname + '</a>'
         return linkedName
     
-    def callToMove(self, index):
-        bot.send_message(self.chat_id, self.getLinkedName(index) + ', your turn', parse_mode = 'HTML')
+    def callToMove(self, id):
+        self.printOut(self.getLinkedName(id) + ', your turn')
 
     def startRound(self):
         shuffle(self.id)
@@ -216,7 +210,7 @@ class Game:
             bot.send_message(chatsById[currId], cardSet)
         self.isFirstMove = True
         self.currPlayer = 0
-        self.callToMove(self.currPlayer)
+        self.callToMove(self.id[self.currPlayer])
         self.cntOfCardsByRang.clear()
         for i in range(self.numberOfCardsInGame):
             if self.cntOfCardsByRang.get(self.cardDeck[i] % 13) is None:
@@ -225,24 +219,25 @@ class Game:
                 self.cntOfCardsByRang[self.cardDeck[i] % 13] += 1 
 
     def start(self, message):
+        curId = message.from_user.id
         if self.isCreated == False:
-            self.printOut("The game hasn't created yet")
+            self.printOut(self.getName(curId) +  ", the game hasn't created yet")
             return
         if self.isStarted:
-            self.printOut("The game has started yet")
+            self.printOut(self.getName(curId) + ", the game has started yet")
             return
         if self.numberOfPlayers < 1:
-            self.printOut("Not enough players to play")
+            self.printOut(self.getName(curId) + ", not enough players to play")
             return
         listOfNonInitialized = ''
         for index in range(0, len(self.id)):
             currId = self.id[index]
             if chatsById.get(currId) == None:
-                listOfNonInitialized += self.getLinkedName(index) + ', '
+                listOfNonInitialized += self.getLinkedName(currId) + ', '
         if listOfNonInitialized != '':
-            bot.send_message(self.chat_id, listOfNonInitialized + "please, send 'go' to the CardBluff bot", parse_mode = 'HTML')
+            self.printOut(listOfNonInitialized + "please, send 'go' to the CardBluff bot")
             return
-        self.printOut("The game was started")
+        self.printOut("The game has started")
         self.isStarted = True
         self.currPlayer = 0
         self.alivePlayers = self.id
@@ -287,7 +282,7 @@ class Game:
         self.currPlayer += 1
         if self.currPlayer == len(self.alivePlayers):
             self.currPlayer = 0
-        self.callToMove(self.currPlayer)
+        self.callToMove(self.id[self.currPlayer])
     
     def addCardToPlayer(self, id):
         self.isLooser[id] = 1
@@ -350,7 +345,7 @@ class Game:
         res = "Hands:\n"
         curPos = 0
         for curId in self.alivePlayers:
-            res += self.firstNameById[curId] + " " + self.lastNameById[curId] + ": "
+            res += self.getName(curId) + ": "
             for i in range(self.numberOfCards[curId]):
                 res = self.addCardToString(res, self.cardDeck[curPos], (i == 0))
                 curPos += 1
@@ -362,7 +357,7 @@ class Game:
 
     def finish(self):
         isJoined[self.alivePlayers[0]] = 0
-        bot.send_message(self.chat_id, 'The winner is ' + self.getLinkedName(0), parse_mode = 'HTML')
+        self.printOut('The winner is ' + self.getLinkedName(self.id[0])) 
 
     def finishRound(self):
         self.reveal()
@@ -384,6 +379,19 @@ class Game:
 
 
 def register(message):
+
+    if users.get(message.from_user.id) == None:
+        users[message.from_user.id] = 1
+        if message.from_user.first_name == None:
+            firstNameById[message.from_user.id] = ''
+        else:
+            firstNameById[message.from_user.id] = message.from_user.first_name
+        
+        if message.from_user.last_name == None:
+            lastNameById[message.from_user.id] = ''
+        else:
+            lastNameById[message.from_user.id] = message.from_user.last_name
+
     if gamesByChatId.get(message.chat.id) == None:
         gamesByChatId[message.chat.id] = Game()
         gamesByChatId[message.chat.id].getChat(message.chat.id)
