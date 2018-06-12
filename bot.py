@@ -380,17 +380,16 @@ class Game:
 
 def register(message):
 
-    if users.get(message.from_user.id) == None:
-        users[message.from_user.id] = 1
-        if message.from_user.first_name == None:
-            firstNameById[message.from_user.id] = ''
-        else:
-            firstNameById[message.from_user.id] = message.from_user.first_name
+    
+    if message.from_user.first_name == None:
+        firstNameById[message.from_user.id] = ''       
+    else:
+        firstNameById[message.from_user.id] = message.from_user.first_name
         
-        if message.from_user.last_name == None:
-            lastNameById[message.from_user.id] = ''
-        else:
-            lastNameById[message.from_user.id] = message.from_user.last_name
+    if message.from_user.last_name == None:
+        lastNameById[message.from_user.id] = ''
+    else:
+        lastNameById[message.from_user.id] = message.from_user.last_name
 
     if gamesByChatId.get(message.chat.id) == None:
         gamesByChatId[message.chat.id] = Game()
