@@ -46,6 +46,7 @@ class Game:
         self.isLooser = dict()
         self.currPlayer = 0
         self.cardDeck = [i for i in range(52)]
+        self.keyboard = None
 
         
     def isHigherHand(self, nextHand):
@@ -87,7 +88,6 @@ class Game:
         bot.edit_message_text(chat_id = self.chat_id, message_id = self.message_id, text = self.getListOfPlayers(), reply_markup = self.keyboard, parse_mode='HTML')
     
     def getName(self, id):
-        print(id)
         res = firstNameById[id]
         if lastNameById[id] != '':
             res = res + ' ' + lastNameById[id]
@@ -138,16 +138,15 @@ class Game:
     
     def createGame(self, message, keyboard):
         if self.isCreated:
-            self.printOut("The game is created")
+            self.printOut("The game has been created before")
             return
         self.isCreated = True
         self.numberOfPlayers = 0
         self.keyboard = keyboard
-        self.chat_id = message.chat.id
-        self.message_id = message.message_id
         
-        
-        bot.send_message(self.chat_id, self.getListOfPlayers(), reply_markup = self.keyboard, parse_mode='HTML')
+        sentMsg = bot.send_message(self.chat_id, self.getListOfPlayers(), reply_markup = self.keyboard, parse_mode='HTML')
+        self.chat_id = sentMsg.chat.id
+        self.message_id = sentMsg.message_id
    
     def removePlayer(self, message):
         curId = message.from_user.id
@@ -239,6 +238,7 @@ class Game:
             self.printOut(listOfNonInitialized + "please, send 'go' to the CardBluff bot")
             return
         self.printOut("The game has started")
+        bot.delete_message(self.chat_id, self.message_id)
         self.isStarted = True
         self.currPlayer = 0
         self.alivePlayers = self.id
@@ -375,34 +375,49 @@ class Game:
 
     def getChat(self, chatId):
         self.chat_id = chatId
+
+    def cancel(self):
+        for curId in self.id:
+            isJoined[curId] = 0
     
 
-
-
-def register(message):
-
-    if message.from_user.first_name == None:
-        firstNameById[message.from_user.id] = ''       
+def registerPlayer(user):
+    if user.first_name == None:
+        firstNameById[user.id] = ''       
     else:
-        firstNameById[message.from_user.id] = message.from_user.first_name
+        firstNameById[user.id] = user.first_name
         
-    if message.from_user.last_name == None:
-        lastNameById[message.from_user.id] = ''
+    if user.last_name == None:
+        lastNameById[user.id] = ''
     else:
-        lastNameById[message.from_user.id] = message.from_user.last_name
+        lastNameById[user.id] = user.last_name
 
-    if gamesByChatId.get(message.chat.id) == None:
-        gamesByChatId[message.chat.id] = Game()
-        gamesByChatId[message.chat.id].getChat(message.chat.id)
+def registerChat(id):
+    if gamesByChatId.get(id) == None:
+        gamesByChatId[id] = Game()
+        gamesByChatId[id].getChat(id)
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    register(message)
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
     bot.send_message(message.chat.id, "Welcome to the CardBluff bot")
+
+@bot.message_handler(commands=['cancel'])
+def cancel(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    curGame = gamesByChatId[message.chat.id]
+    if curGame.isCreated and not curGame.isStarted:
+        curGame.cancel()
+        bot.delete_message(curGame.chat_id, curGame.message_id)
+        gamesByChatId[message.chat.id] = None
+        bot.send_message(message.chat.id, "Successfully canceled")
 
 @bot.message_handler(commands=['help'])
 def getRules(message):
-    register(message)
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
     rules = "Rules:\n"
     rules += "The game consists of few rounds. In the start of the game, each player has one card.\n"
     rules += "In the moment of playing each player has from one to five cards only knows for him\n"
@@ -413,11 +428,12 @@ def getRules(message):
     rules += "It will be a player who say 'reveal'. After that all players reveal their hands and round will be finished.\n"
     rules += "If it will be a current hand, then the current player will get an additional card in new round.\n"
     rules += "Else, the previous player will get an additional card in new round. The game goes until there is only one player\n"
-    register(message)
     bot.send_message(message.chat.id, rules)
 
 @bot.message_handler(commands=['hands'])
 def getHelp(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
     helplist = 'Suits:\n'
     helplist += '0 - ' + cardSuits[0] + '\n' + '1 - ' + cardSuits[1] + '\n'
     helplist += '2 - ' + cardSuits[2] + '\n' + '3 - ' + cardSuits[3] + '\n'
@@ -432,12 +448,12 @@ def getHelp(message):
     helplist += "6 - Full house (three cards of one rank and two cards of another one rank): (/m 6JK, three jacks and two kings)\n"
     helplist += "7 - Four of a kind (four cards of one rank): (/m 70, four tens)\n"
     helplist += "8 - Straight flush (five cards of sequential rank and same suit, you have to provide highest card and suit): (/m 8J, Straight flush up to jack)\n"
-    register(message)
     bot.send_message(message.chat.id, helplist)
 
 @bot.message_handler(commands=['creategame'])
 def creategame(message):
-    register(message)
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
     keyboard = types.InlineKeyboardMarkup()
     callback_button = types.InlineKeyboardButton(text="Join", callback_data="Join")
     keyboard.add(callback_button)
@@ -446,26 +462,31 @@ def creategame(message):
 @bot.callback_query_handler(func=lambda c: True)
 def inline(c):
     if c.data == 'Join':
+        registerPlayer(c.from_user)
         gamesByChatId[c.message.chat.id].addPlayer(c.message, c.from_user) 
 
 @bot.message_handler(commands=['leavegame'])
 def leavegame(message):
-    register(message)
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
     gamesByChatId[message.chat.id].removePlayer(message) 
 
 @bot.message_handler(commands=['countcards'])
 def countcards(message):
-    register(message)
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
     gamesByChatId[message.chat.id].printNumberOfCards()
 
 @bot.message_handler(commands=['startgame'])
 def startgame(message):
-    register(message)
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
     gamesByChatId[message.chat.id].start(message)
 
 @bot.message_handler(commands=['r'])
 def getmsg(message):
-    register(message)
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
     global gamesByChatId
     curGame = gamesByChatId[message.chat.id]
     if (not curGame.isCreated or not curGame.isStarted):
@@ -485,12 +506,13 @@ def getmsg(message):
 
 @bot.message_handler(commands=['m'])
 def getmessage(message):
-    register(message)
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
     global gamesByChatId
     curGame = gamesByChatId[message.chat.id]
     curText = message.text[3:]
-    if (not curGame.isCreated):
-        return
+    if (not curGame.isStarted):
+        return 
     if (message.from_user.id != curGame.id[curGame.currPlayer]):
         return
     if curGame.isCorrectMove(curText) and curGame.started():
@@ -507,7 +529,8 @@ def getmessage(message):
 
 @bot.message_handler(content_types=['text'])
 def getm(message):
-    register(message)
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
     if (message.text == "go"):
         bot.send_message(message.chat.id, "successfully")
         chatsById[message.from_user.id] = message.chat.id
