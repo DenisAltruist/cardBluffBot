@@ -14,7 +14,7 @@ isJoined = dict()
 firstNameById = dict()
 lastNameById = dict()
 users = dict()
-cardSuits = [u'\U00002665', u'\U00002666', u'\U00002660', u'\U00002663']
+cardSuits = [u'\U00002764', u'\U00002666', u'\U00002660', u'\U00002663']
 neutral = u'\U0001F610'
 typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "J": 9, "Q": 10, "K": 11, "A": 12}
 
