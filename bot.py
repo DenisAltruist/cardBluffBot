@@ -87,6 +87,7 @@ class Game:
         bot.edit_message_text(chat_id = self.chat_id, message_id = self.message_id, text = self.getListOfPlayers(), reply_markup = self.keyboard, parse_mode='HTML')
     
     def getName(self, id):
+        print(id)
         res = firstNameById[id]
         if lastNameById[id] != '':
             res = res + ' ' + lastNameById[id]
@@ -151,13 +152,13 @@ class Game:
     def removePlayer(self, message):
         curId = message.from_user.id
         if self.isCreated == False:
-            self.printOut("The game hasn't created yet")
+            self.printOut(self.getName(curId) + ", the game hasn't created yet")
             return
         if self.id.count(curId) == 0:
-            self.printOut(self.getLinkedName(self.getName(curId)) + ", " + "you haven't joined yet")
+            self.printOut(self.getName(curId) + ", you haven't joined yet")
             return
         if self.isStarted:
-            self.printOut("You can't leave from the started game")
+            self.printOut(self.getName(curId) + ", you can't leave from the started game")
             return
         isJoined[message.from_user.id] = 0
         self.numberOfCards.pop(message.from_user.id)
@@ -380,7 +381,6 @@ class Game:
 
 def register(message):
 
-    
     if message.from_user.first_name == None:
         firstNameById[message.from_user.id] = ''       
     else:
@@ -402,6 +402,7 @@ def start(message):
 
 @bot.message_handler(commands=['help'])
 def getRules(message):
+    register(message)
     rules = "Rules:\n"
     rules += "The game consists of few rounds. In the start of the game, each player has one card.\n"
     rules += "In the moment of playing each player has from one to five cards only knows for him\n"
