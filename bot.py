@@ -463,6 +463,7 @@ def creategame(message):
 def inline(c):
     if c.data == 'Join':
         registerPlayer(c.from_user)
+        registerChat(c.message.chat.id)
         gamesByChatId[c.message.chat.id].addPlayer(c.message, c.from_user) 
 
 @bot.message_handler(commands=['leavegame'])
