@@ -86,7 +86,18 @@ class Game:
         
     def checkPlaylist(self):
         bot.edit_message_text(chat_id = self.chat_id, message_id = self.message_id, text = self.getListOfPlayers(), reply_markup = self.keyboard)
-        
+    
+    def getNameSurname(self, first_name, last_name):
+        res = ''
+        if not first_name is None:
+            res = res + first_name
+        if not last_name is None:
+            if res != '':
+                res = res + ' ' + last_name
+            else:
+                res = last_name
+        return res
+    
     def addPlayer(self, message, from_user):
         if isJoined.get(from_user.id) == 1:
             self.printOut("You can play only one game at a time")
