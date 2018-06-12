@@ -536,4 +536,6 @@ def getm(message):
         bot.send_message(message.chat.id, "successfully")
         chatsById[message.from_user.id] = message.chat.id
 
-bot.polling()
+if __name__ == '__main__':
+     bot.polling(none_stop=True)
+
