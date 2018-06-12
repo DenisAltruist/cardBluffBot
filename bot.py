@@ -120,7 +120,7 @@ class Game:
         self.message_id = message.message_id
         self.chat_id = message.chat.id
         
-        self.playlist = self.playlist + '\n' + '@' + from_user.first_name + " " + from_user.last_name
+        self.playlist = self.playlist + '\n' + '@' + self.getNameSurname(from_user.first_name, from_user.last_name)
         self.checkPlaylist()
     
     def printNumberOfCards(self):
