@@ -536,6 +536,10 @@ def getm(message):
         bot.send_message(message.chat.id, "successfully")
         chatsById[message.from_user.id] = message.chat.id
 
-if __name__ == '__main__':
-     bot.polling(none_stop=True)
+while True:
+    try:
+        bot.polling(none_stop=True)
+    except Exception as e:
+        print("Internet error")
+        time.sleep(5)
 
