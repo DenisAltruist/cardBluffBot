@@ -274,7 +274,7 @@ class Game:
                 return True
             return False
 
-        if (isCorrectCard(s[1]) and isCorrectCard(s[2])):
+        if (isCorrectCard(s[1]) and isCorrectCard(s[2]) and (s[1] != s[2])):
             return True
         return False
 
