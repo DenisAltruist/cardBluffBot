@@ -35,6 +35,7 @@ class Game:
         self.playlist = ''
         self.id = []
         self.alivePlayers = []
+        self.leavers = []
         self.isStarted = False
         self.isCreated = False
         self.isFirstMove = False
@@ -47,6 +48,7 @@ class Game:
         self.currPlayer = 0
         self.cardDeck = [i for i in range(52)]
         self.keyboard = None
+       
 
         
     def isHigherHand(self, nextHand):
@@ -157,13 +159,13 @@ class Game:
             self.printOut(self.getName(curId) + ", you haven't joined yet")
             return
         if self.isStarted:
-            self.printOut(self.getName(curId) + ", you can't leave from the started game")
-            return
-        isJoined[message.from_user.id] = 0
-        self.numberOfCards.pop(message.from_user.id)
-        self.id.remove(message.from_user.id)
-        self.numberOfPlayers -= 1
-        self.checkPlaylist()
+            self.finishRound(curId)
+        else:
+            isJoined[message.from_user.id] = 0
+            self.numberOfCards.pop(message.from_user.id)
+            self.id.remove(message.from_user.id)
+            self.numberOfPlayers -= 1
+            self.checkPlaylist()
     
     def addCardToString(self, cardSet, cardNumber, isFirst):
         suit = cardNumber // 13
@@ -285,14 +287,14 @@ class Game:
             self.currPlayer = 0
         self.callToMove(self.id[self.currPlayer])
     
-    def addCardToPlayer(self, id):
+    def addCardsToPlayer(self, id, cnt):
         self.isLooser[id] = 1
-        self.numberOfCards[id] += 1
-        self.numberOfCardsInGame += 1
+        self.numberOfCards[id] += cnt
+        self.numberOfCardsInGame += cnt
         if self.numberOfCards[id] > 5:
             self.alivePlayers.remove(id)
             isJoined[id] = 0
-            self.numberOfCardsInGame -= 6
+            self.numberOfCardsInGame -= self.numberOfCards[id]
 
     def checkCntOf(self, rang, count):
         if self.cntOfCardsByRang.get(rang) == None:
@@ -359,19 +361,27 @@ class Game:
     def finish(self):
         isJoined[self.alivePlayers[0]] = 0
         self.printOut('The winner is ' + self.getLinkedName(self.id[0])) 
+        gamesByChatId[self.chat_id] = None
 
-    def finishRound(self):
+    def finishRound(self, leaverId = None):
         self.reveal()
-        prevPlayer = self.currPlayer - 1
-        if prevPlayer < 0:
-            prevPlayer += len(self.alivePlayers)
+        if leaverId is None:
+            prevPlayer = self.currPlayer - 1
+            if prevPlayer < 0:
+                prevPlayer += len(self.alivePlayers)
 
-        if self.hasHand():
-            self.addCardToPlayer(self.id[self.currPlayer])
+            if self.hasHand():
+                self.addCardsToPlayer(self.id[self.currPlayer], 1)
+            else:
+                self.addCardsToPlayer(self.id[prevPlayer], 1)
         else:
-            self.addCardToPlayer(self.id[prevPlayer])
+            self.addCardsToPlayer(leaverId, 6 - self.numberOfCards[leaverId])
         self.currHand = [-1, -1, -1]
         self.printNumberOfCards()
+        if len(self.alivePlayers) == 1:
+            self.finish()
+            return
+        self.startRound()
 
     def getChat(self, chatId):
         self.chat_id = chatId
@@ -397,6 +407,10 @@ def registerChat(id):
         gamesByChatId[id] = Game()
         gamesByChatId[id].getChat(id)
 
+def isAdmin(message):
+    status = bot.get_chat_member(message.chat.id, message.from_user.id).status
+    return (status == 'creator') or (status == 'administrator')
+
 @bot.message_handler(commands=['start'])
 def start(message):
     registerChat(message.chat.id)
@@ -408,7 +422,8 @@ def cancel(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     curGame = gamesByChatId[message.chat.id]
-    if curGame.isCreated and not curGame.isStarted:
+    print(bot.get_chat_member(message.chat.id, message.from_user.id))
+    if curGame.isCreated and isAdmin(message):
         curGame.cancel()
         bot.delete_message(curGame.chat_id, curGame.message_id)
         gamesByChatId[message.chat.id] = None
@@ -497,12 +512,8 @@ def getmsg(message):
     if curGame.firstMove():
         curGame.printOut("You can't reveal at the first move")
     else:
-        curGame.finishRound()
-        if len(curGame.alivePlayers) == 1:
-            curGame.finish()
-            curGame = None
-        else:
-            curGame.startRound()
+        curGame.finishRound()   
+    curGame.startRound()
     gamesByChatId[message.chat.id] = curGame
 
 @bot.message_handler(commands=['m'])
