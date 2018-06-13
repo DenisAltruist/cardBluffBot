@@ -425,7 +425,8 @@ def cancel(message):
     print(bot.get_chat_member(message.chat.id, message.from_user.id))
     if curGame.isCreated and isAdmin(message):
         curGame.cancel()
-        bot.delete_message(curGame.chat_id, curGame.message_id)
+        if not curGame.isStarted:
+            bot.delete_message(curGame.chat_id, curGame.message_id)
         gamesByChatId[message.chat.id] = None
         bot.send_message(message.chat.id, "Successfully canceled")
 
@@ -513,7 +514,6 @@ def getmsg(message):
         curGame.printOut("You can't reveal at the first move")
     else:
         curGame.finishRound()   
-    curGame.startRound()
     gamesByChatId[message.chat.id] = curGame
 
 @bot.message_handler(commands=['m'])
