@@ -16,10 +16,10 @@ lastNameById = dict()
 users = dict()
 cardSuits = [u'\U00002764', u'\U00002666', u'\U00002660', u'\U00002663']
 neutral = u'\U0001F610'
-typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "J": 9, "Q": 10, "K": 11, "A": 12}
+typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "j": 9, "q": 10, "k": 11, "a": 12}
 
 def isCorrectCard(c):
-    if not (c == 'J' or c == 'Q' or c == 'K' or c == 'A' or c == '0' or (c >= '2' and c <= '9')):
+    if not (c == 'j' or c == 'q' or c == 'k' or c == 'a' or c == '0' or (c >= '2' and c <= '9')):
         return False
     return True
 
@@ -36,6 +36,7 @@ class Game:
         self.id = []
         self.alivePlayers = []
         self.leavers = []
+        self.isRegistered = False
         self.isStarted = False
         self.isCreated = False
         self.isFirstMove = False
@@ -63,6 +64,7 @@ class Game:
                 return nextHand > self.currHand 
 
     def parseStringToHand(self, s):
+        s = s.lower()
         tp = int(s[0])
         if (tp <= 1) or (tp >= 3 and tp <= 4) or (tp == 7):
             return [tp, typeOfCard[s[1]], 0]
@@ -209,7 +211,12 @@ class Game:
             for i in range(cntOfCards):
                 cardSet = self.addCardToString(cardSet, self.cardDeck[curPos], (i == 0))
                 curPos += 1
-            bot.send_message(chatsById[currId], cardSet)
+
+            try:
+                bot.send_message(chatsById[currId], cardSet)
+            except Exception as e:
+                print("Sending to ban user")
+
         self.isFirstMove = True
         self.currPlayer = 0
         self.callToMove(self.id[self.currPlayer])
@@ -219,6 +226,11 @@ class Game:
                 self.cntOfCardsByRang[self.cardDeck[i] % 13] = 1
             else:
                 self.cntOfCardsByRang[self.cardDeck[i] % 13] += 1 
+
+    def sendNotifications(self):
+        res = []
+        return res
+
 
     def start(self, message):
         curId = message.from_user.id
@@ -231,15 +243,16 @@ class Game:
         if self.numberOfPlayers < 1:
             self.printOut(self.getName(curId) + ", not enough players to play")
             return
-        listOfNonInitialized = ''
+
+        listOfNonInitialized = ""
         for index in range(0, len(self.id)):
             currId = self.id[index]
             if chatsById.get(currId) == None:
                 listOfNonInitialized += self.getLinkedName(currId) + ', '
-        if listOfNonInitialized != '':
+        if listOfNonInitialized != "":
             self.printOut(listOfNonInitialized + "please, send 'go' to the CardBluff bot")
             return
-        self.printOut("The game has started")
+        
         bot.delete_message(self.chat_id, self.message_id)
         self.isStarted = True
         self.currPlayer = 0
@@ -254,8 +267,7 @@ class Game:
         self.isFirstMove = False
 
     def isCorrectMove(self, s):
-        if (s.lower() == "reveal"):
-            return True
+        s = s.lower()
         if len(s) == 0:
             return False
         if not (s[0] >= '0' and s[0] <= '8'):
@@ -360,8 +372,8 @@ class Game:
 
     def finish(self):
         isJoined[self.alivePlayers[0]] = 0
-        self.printOut('The winner is ' + self.getLinkedName(self.id[0])) 
-        gamesByChatId[self.chat_id] = None
+        self.printOut('The winner is ' + self.getLinkedName(self.id[0]))
+        self.__init__()
 
     def finishRound(self, leaverId = None):
         self.reveal()
@@ -385,6 +397,7 @@ class Game:
 
     def getChat(self, chatId):
         self.chat_id = chatId
+        self.isRegistered = True
 
     def cancel(self):
         for curId in self.id:
@@ -403,7 +416,8 @@ def registerPlayer(user):
         lastNameById[user.id] = user.last_name
 
 def registerChat(id):
-    if gamesByChatId.get(id) == None:
+    print(id)
+    if (gamesByChatId.get(id) is None) or (gamesByChatId.get(id).isRegistered == False):
         gamesByChatId[id] = Game()
         gamesByChatId[id].getChat(id)
 
