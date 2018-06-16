@@ -22,15 +22,6 @@ con = None
 
 bot = telebot.TeleBot(config.token)
 gamesByChatId = dict()
-
-#stats by user id
-cntOfDuelWins = dict()
-cntOfPartyWins = dict()
-cntOfPlayedDuels = dict()
-cntOfPlayedParties = dict()
-totalAmountOfPlayers = dict()
-totalSumOfPlaces = dict()
-
 cardSuits = [u'\U00002764', u'\U00002666', u'\U00002660', u'\U00002663']
 neutral = u'\U0001F610'
 typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "j": 9, "q": 10, "k": 11, "a": 12}
@@ -47,16 +38,93 @@ def isCorrectSuit(c):
     return True
 
 class Stats():
-    def __init__(self, id):
-        if (id == 5):
-            print("kek")
-    def addDuel(self, isWin):
-        if (isWin):
-            print("kek")
-    def addParty(self, isWin, place):
-        if (isWin):
-            print("kek")
+    def getCursor(self):
+        con = lite.connect("players.db")
+        return con.cursor()
 
+    def select(self, id = None):
+        con = lite.connect("players.db")
+        cur = con.cursor()
+        if id is None:
+            cur.execute("SELECT * FROM players")
+            return cur.fetchall()
+        else:
+            print(id)
+            cur.execute("SELECT * FROM players WHERE id = " + str(id))
+            return cur.fetchall()
+    
+    def insert(self, data):
+        con = lite.connect("players.db")
+        cur = con.cursor()
+        cur.executemany("INSERT INTO players VALUES (?,?,?,?,?,?,?)", data) 
+        con.commit()
+
+    def edit(self, id, type, newValue):
+        con = lite.connect("players.db")
+        cur = con.cursor()
+        field = ""
+        if type == 1:
+            field = "cntOfDuelWins"
+        elif type == 2:
+            field = "cntOfPartyWins"
+        elif type == 3:
+            field = "cntOfPlayedDuels"
+        elif type == 4:
+            field = "cntOfPlayedParties"
+        elif type == 5:
+            field = "totalAmountOfPlayers"
+        elif type == 6:
+            field = "totalSumOfPlaces"
+
+        sql = "UPDATE players SET " + field + " = " + str(newValue) + " WHERE id = " + str(self.id)
+        cur.execute(sql)
+        con.commit()
+
+
+    def __init__(self, id):
+        self.data = self.select(id)
+        self.id = id
+        if self.data == []:
+            self.data = [str(id), '0', '0', '0', '0', '0', '0']
+            self.insert([(str(id), '0', '0', '0', '0', '0', '0')])
+        else:
+            self.data = list(self.data[0])
+
+
+    def change(self, tp, delta):
+        self.data[tp] = str(int(self.data[tp]) + delta)
+        self.edit(self.id, tp, self.data[tp])
+
+    def addDuel(self, place):
+        if place == 1:
+            self.change(1, 1)
+            self.change(6, 1) 
+        else:
+            self.change(6, 2)
+        self.change(5, 2)
+        self.change(3, 1)
+
+    def addParty(self, place, numberOfPlayers):
+        if place == 1:
+            self.change(2, 1)
+        self.change(6, place)
+        self.change(5, numberOfPlayers)
+        self.change(4, 1)
+
+    def getStats(self):
+        if self.data[3] == '0':
+            duelWinrate = '0.00'
+        else:
+            duelWinrate = "%.2f" % (int(self.data[1]) / int(self.data[3]) * 100)
+
+        if self.data[4] == '0':
+            partyWinrate = '0.00'
+        else:
+            partyWinrate = "%.2f" % (int(self.data[2]) / int(self.data[4]) * 100)
+        res = "Games played: " + str(int(self.data[3]) + int(self.data[4])) + "\n"
+        res += "Duel winrate: " + duelWinrate + "%\n"
+        res += "Party winrate: " + partyWinrate + "%\n"
+        return res
 
 class Player:
     def __init__(self, user):
@@ -73,24 +141,34 @@ class Player:
         self.chat_id = None
         self.isRegistered = False
         self.numberOfCards = 0
-        self.stats = Stats(id)
+        self.stats = Stats(self.id)
     
     def join(self, game):
         self.chat_id = game.chat_id
-
+    
     def leave(self, game):
         self.chat_id = None
         restNumberOfPlayers = len(game.alivePlayers)
-        if (game.numberOfPlayers == 2):
-            self.stats.addDuel(0)
-        elif (game.numberOfPlayers >= 4):
-            self.stats.addParty(0, restNumberOfPlayers)
+        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 5):
+            self.stats.addDuel(restNumberOfPlayers)
+        elif (game.numberOfPlayers >= 4 and game.numberOfRounds >= 5):
+            self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
+    
+    def getFullname(self):
+        res = self.first_name
+        if (res != ""):
+            res += ' '
+        res += self.last_name
+        return res
+
+    def getStats(self):
+        return self.getFullname() + " stats:\n" + self.stats.getStats()
     
     def sendCards(self, cardSet):
         try:
             bot.send_message(self.id, cardSet)
         except Exception as e:
-            print("Sending to ban user")
+            print("Sending to ban or not started user")
     
     def register(self):
         self.isRegistered = True
@@ -100,6 +178,7 @@ class Game:
         self.playlist = ''
         self.numberOfPlayers = 0 #with loosers
         self.numberOfCardsInGame = 0
+        self.numberOfRounds = 0
         self.isRegistered = False
         self.isStarted = False
         self.isCreated = False
@@ -162,9 +241,6 @@ class Game:
         return res
     
     def addPlayer(self, message, player):
-        print("KEK")
-        print(player.id)
-        print(self.players.count(player))
         if self.players.count(player) > 0:
             self.printOut(self.getName(player) + ", you have already joined")
             return
@@ -177,7 +253,6 @@ class Game:
         if self.isStarted:
             self.printOut(self.getName(player) + ", you can't join to the started game")
             return
-        print(player.id)
         self.message_id = message.message_id #???
         self.chat_id = message.chat.id #???
         self.players.append(player)
@@ -264,6 +339,7 @@ class Game:
         self.printOut(self.getLinkedName(player) + ', your turn')
 
     def startRound(self):
+        
         shuffle(self.alivePlayers)
         shuffle(self.cardDeck)
         for player in self.players:
@@ -279,6 +355,7 @@ class Game:
             player.sendCards(cardSet)
 
         self.isFirstMove = True
+        self.numberOfRounds += 1
         self.currPlayer = 0
         self.callToMove(self.alivePlayers[self.currPlayer])
         self.cntOfCardsByRang.clear()
@@ -295,19 +372,10 @@ class Game:
         if self.isStarted:
             self.printOut(self.getName(player) + ", the game has started yet")
             return
-        if self.numberOfPlayers < 1:
+        if self.numberOfPlayers < 2:
             self.printOut(self.getName(player) + ", not enough players to play")
             return
 
-        listOfNonInitialized = ""
-        for index in range(0, len(self.players)):
-            currPlayer = self.players[index]
-            if currPlayer.isRegistered == False:
-                listOfNonInitialized += self.getLinkedName(currPlayer) + ', '
-        if listOfNonInitialized != "":
-            self.printOut(listOfNonInitialized + "please, send 'go' to the CardBluff bot")
-            return
-        
         bot.delete_message(self.chat_id, self.message_id)
         self.isStarted = True
         self.currPlayer = 0
@@ -478,11 +546,6 @@ def initializeFromDatabase():
     try: 
         con = lite.connect('players.db')
         cur = con.cursor()
-        cur.execute("SELECT * FROM players")
-        data = cur.fetchall()
-        for row in data:
-            curId = int(row[0])
-    
     except lite.Error as e:
         print("Database connection error")
 
@@ -520,7 +583,7 @@ def cancel(message):
         bot.send_message(message.chat.id, "Successfully canceled")
 
 @bot.message_handler(commands=['help'])
-def getRules(message):
+def getHelp(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     rules = "Rules:\n"
@@ -535,14 +598,28 @@ def getRules(message):
     rules += "Else, the previous player will get an additional card in new round. The game goes until there is only one player\n"
     bot.send_message(message.chat.id, rules)
 
-@bot.message_handler(commands=['hands'])
-def getHelp(message):
+
+@bot.message_handler(commands=['stats'])
+def getStats(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    bot.send_message(message.chat.id, playerById[message.from_user.id].getStats())
+
+
+@bot.message_handler(commands=['suits'])
+def getSuits(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     helplist = 'Suits:\n'
     helplist += '0 - ' + cardSuits[0] + '\n' + '1 - ' + cardSuits[1] + '\n'
     helplist += '2 - ' + cardSuits[2] + '\n' + '3 - ' + cardSuits[3] + '\n'
-    helplist += 'Hands in in ascending order:\n'
+    bot.send_message(message.chat.id, helplist)
+
+@bot.message_handler(commands=['hands'])
+def getHands(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    helplist = 'Hands in in ascending order:\n'
     helplist += "0 - High card (example of move: /m 0K, kicker king)\n"
     helplist += "1 - One pair: (/m 18, pair of eights)\n"
     helplist += "2 - Two pairs: (/m 28J, two pairs of eights and jacks)\n"
