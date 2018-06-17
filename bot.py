@@ -121,9 +121,28 @@ class Stats():
             partyWinrate = '0.00'
         else:
             partyWinrate = "%.2f" % (int(self.data[2]) / int(self.data[4]) * 100)
-        res = "Games played: " + str(int(self.data[3]) + int(self.data[4])) + "\n"
+
+    #id
+        #cntOfDuelWins
+        #cntOfPartyWins
+        #cntOfPlayedDuels
+        #cntOfPlayedParties
+        #totalAmountOfPlayers
+        #totalSumOfPlaces
+        cntOfPlayedGames = int(self.data[3]) + int(self.data[4])
+        if (int(self.data[5]) == 0):
+            val = 0.0
+        else:
+            bestVal = cntOfPlayedGames / int(self.data[5])
+            curVal = int(self.data[6]) / int(self.data[5])
+            val = (1 - curVal) / (1 - bestVal) * 100
+
+        skill = "%.2f" % val
+        res = "Duels played: " + self.data[3] + "\n"
         res += "Duel winrate: " + duelWinrate + "%\n"
+        res += "Parties played: " + self.data[4] + "\n"
         res += "Party winrate: " + partyWinrate + "%\n"
+        res += "Skill: " + skill + "%\n"
         return res
 
 class Player:
@@ -151,7 +170,7 @@ class Player:
         restNumberOfPlayers = len(game.alivePlayers)
         if (game.numberOfPlayers == 2 and game.numberOfRounds >= 5):
             self.stats.addDuel(restNumberOfPlayers)
-        elif (game.numberOfPlayers >= 4 and game.numberOfRounds >= 5):
+        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 5):
             self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
     
     def getFullname(self):
@@ -192,6 +211,8 @@ class Game:
         self.cardDeck = [i for i in range(52)]
         self.keyboard = None
         self.isLooser = dict() #in the previous round
+        self.startAmountOfCards = 0
+        self.finishAmountOfCards = 0
         self.numberOfCards = dict()
         self.cntOfCardsByRang = dict()
         
@@ -262,13 +283,13 @@ class Game:
         player.join(self)
         
     def printNumberOfCards(self):
-        if self.isCreated == False:
-            self.printOut("The game hasn't created yet")
+        if self.isStarted == False:
+            self.printOut("The game hasn't started yet")
             return
         res = ''
         for key, value in self.numberOfCards.items():
             res = res + self.getName(key) + ": "
-            if value > 5:
+            if value > self.finishAmountOfCards:
                 res = res + "Lost"
             else: 
                 res = res + str(value)
@@ -375,12 +396,21 @@ class Game:
         if self.numberOfPlayers < 2:
             self.printOut(self.getName(player) + ", not enough players to play")
             return
+        
+        if self.numberOfPlayers == 2:
+            self.startAmountOfCards = 5
+            self.finishAmountOfCards = 9
+        else:
+            self.startAmountOfCards = 1
+            self.finishAmountOfCards = 5
 
         bot.delete_message(self.chat_id, self.message_id)
         self.isStarted = True
         self.currPlayer = 0
         self.alivePlayers = self.players
-        self.numberOfCardsInGame = self.numberOfPlayers
+        self.numberOfCardsInGame = self.numberOfPlayers * self.startAmountOfCards
+        for player in self.alivePlayers:
+            self.numberOfCards[player] = self.startAmountOfCards
         self.startRound()
 
     def firstMove(self):
@@ -426,7 +456,7 @@ class Game:
         self.isLooser[player] = True
         self.numberOfCards[player] += cnt
         self.numberOfCardsInGame += cnt
-        if self.numberOfCards[player] > 5:
+        if self.numberOfCards[player] > self.finishAmountOfCards:
             player.leave(self)
             self.alivePlayers.remove(player)
             self.numberOfCardsInGame -= self.numberOfCards[player]
@@ -523,7 +553,7 @@ class Game:
             else:
                 self.addCardsToPlayer(self.players[prevPlayer], 1)
         else:
-            self.addCardsToPlayer(leaver, 6 - self.numberOfCards[leaver])
+            self.addCardsToPlayer(leaver, self.finishAmountOfCards + 1 - self.numberOfCards[leaver])
         self.currHand = [-1, -1, -1]
         self.printNumberOfCards()
         if len(self.alivePlayers) == 1:
@@ -561,7 +591,7 @@ def registerChat(id):
 
 def isAdmin(message):
     status = bot.get_chat_member(message.chat.id, message.from_user.id).status
-    return (status == 'creator') or (status == 'administrator')
+    return (status == 'creator') or (status == 'administrator') or (message.chat.id == message.from_user.id)
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -603,7 +633,13 @@ def getHelp(message):
 def getStats(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    bot.send_message(message.chat.id, playerById[message.from_user.id].getStats())
+    if not(message.reply_to_message is None):
+        msg = message.reply_to_message
+        registerChat(msg.chat.id)
+        registerPlayer(msg.from_user)
+        bot.send_message(msg.chat.id, playerById[msg.from_user.id].getStats())
+    else:
+        bot.send_message(message.chat.id, playerById[message.from_user.id].getStats())
 
 
 @bot.message_handler(commands=['suits'])
