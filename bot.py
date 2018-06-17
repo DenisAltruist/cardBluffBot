@@ -38,9 +38,6 @@ def isCorrectSuit(c):
     return True
 
 class Stats():
-    def toFixed(self, numObj, digits = 0):
-        return f"{numObj:.{digits}f}"
-
     def getCursor(self):
         with lite.connect("players.db") as con:
             return con.cursor()
@@ -118,12 +115,12 @@ class Stats():
         if self.data[3] == '0':
             duelWinrate = '0.00'
         else:
-            duelWinrate = self.toFixed(int(self.data[1]) / int(self.data[3]) * 100, 2)
+            duelWinrate = str(round(int(self.data[1]) / int(self.data[3]) * 100, 2))
 
         if self.data[4] == '0':
             partyWinrate = '0.00'
         else:
-            partyWinrate = self.toFixed(int(self.data[2]) / int(self.data[4]) * 100, 2)
+            partyWinrate = str(round(int(self.data[2]) / int(self.data[4]) * 100, 2))
 
     #id
         #cntOfDuelWins
@@ -132,14 +129,6 @@ class Stats():
         #cntOfPlayedParties
         #totalAmountOfPlayers
         #totalSumOfPlaces
-
-        print("STATS!!!")
-        print(self.data[1])
-        print(self.data[2])
-        print(self.data[3])
-        print(self.data[4])
-        print(self.data[5])
-        print(self.data[6])
         cntOfPlayedGames = int(self.data[3]) + int(self.data[4])
         if (int(self.data[5]) == 0):
             val = 0.0
@@ -148,7 +137,7 @@ class Stats():
             curVal = int(self.data[6]) / int(self.data[5])
             val = (1 - curVal) / (1 - bestVal) * 100
 
-        skill = self.toFixed(val, 2)
+        skill = str(round(val, 2))
         res = "Duels played: " + self.data[3] + "\n"
         res += "Duel winrate: " + duelWinrate + "%\n"
         res += "Parties played: " + self.data[4] + "\n"
