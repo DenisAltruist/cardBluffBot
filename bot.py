@@ -52,7 +52,6 @@ class Stats():
                 cur.execute("SELECT * FROM players")
                 return cur.fetchall()
             else:
-                print(id)
                 cur.execute("SELECT * FROM players WHERE id = " + str(id))
                 return cur.fetchall()
     
@@ -118,16 +117,11 @@ class Stats():
         if self.data[3] == '0':
             duelWinrate = '0.00'
         else:
-            print("DUEL_WINRATE")
-            print(self.data[1])
-            print(self.data[3])
-            print(round(int(self.data[1]) / int(self.data[3]), 2))
             duelWinrate = str(round(int(self.data[1]) / int(self.data[3]) * 100, 2))
 
         if self.data[4] == '0':
             partyWinrate = '0.00'
         else:
-            print("PARTY_WINRATE")
             partyWinrate = str(round(int(self.data[2]) / int(self.data[4]) * 100, 2))
 
     #id
@@ -137,14 +131,6 @@ class Stats():
         #cntOfPlayedParties
         #totalAmountOfPlayers
         #totalSumOfPlaces
-
-        print("STATS!!!")
-        print(self.data[1])
-        print(self.data[2])
-        print(self.data[3])
-        print(self.data[4])
-        print(self.data[5])
-        print(self.data[6])
         cntOfPlayedGames = int(self.data[3]) + int(self.data[4])
         if (int(self.data[5]) == 0):
             val = 0.0
@@ -184,9 +170,9 @@ class Player:
     def leave(self, game):
         self.chat_id = None
         restNumberOfPlayers = len(game.alivePlayers)
-        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 0):
+        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 5):
             self.stats.addDuel(restNumberOfPlayers)
-        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 0):
+        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 5):
             self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
     
   
