@@ -173,11 +173,13 @@ class Player:
         elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 5):
             self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
     
+  
     def getFullname(self):
         res = self.first_name
-        if (res != ""):
-            res += ' '
-        res += self.last_name
+        if (res == ""):
+            res = self.last_name
+        elif self.last_name != "":
+            res = res + " " + self.last_name
         return res
 
     def getStats(self):
