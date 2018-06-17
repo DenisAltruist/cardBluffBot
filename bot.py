@@ -38,6 +38,9 @@ def isCorrectSuit(c):
     return True
 
 class Stats():
+    def toFixed(self, numObj, digits = 0):
+        return f"{numObj:.{digits}f}"
+
     def getCursor(self):
         with lite.connect("players.db") as con:
             return con.cursor()
@@ -115,12 +118,12 @@ class Stats():
         if self.data[3] == '0':
             duelWinrate = '0.00'
         else:
-            duelWinrate = "%.2f" % (int(self.data[1]) / int(self.data[3]) * 100)
+            duelWinrate = self.toFixed(int(self.data[1]) / int(self.data[3]) * 100, 2)
 
         if self.data[4] == '0':
             partyWinrate = '0.00'
         else:
-            partyWinrate = "%.2f" % (int(self.data[2]) / int(self.data[4]) * 100)
+            partyWinrate = self.toFixed(int(self.data[2]) / int(self.data[4]) * 100, 2)
 
     #id
         #cntOfDuelWins
@@ -145,7 +148,7 @@ class Stats():
             curVal = int(self.data[6]) / int(self.data[5])
             val = (1 - curVal) / (1 - bestVal) * 100
 
-        skill = "%.2f" % val
+        skill = self.toFixed(val, 2)
         res = "Duels played: " + self.data[3] + "\n"
         res += "Duel winrate: " + duelWinrate + "%\n"
         res += "Parties played: " + self.data[4] + "\n"
