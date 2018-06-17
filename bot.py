@@ -129,6 +129,14 @@ class Stats():
         #cntOfPlayedParties
         #totalAmountOfPlayers
         #totalSumOfPlaces
+
+        print("STATS!!!")
+        print(self.data[1])
+        print(self.data[2])
+        print(self.data[3])
+        print(self.data[4])
+        print(self.data[5])
+        print(self.data[6])
         cntOfPlayedGames = int(self.data[3]) + int(self.data[4])
         if (int(self.data[5]) == 0):
             val = 0.0
