@@ -1,3 +1,5 @@
+from __future__ import division
+
 import telebot
 import config
 import json
@@ -5,7 +7,7 @@ import random
 import time
 import sqlite3 as lite
 
-from __future__ import division
+
 from telebot import types
 from random import shuffle
 
