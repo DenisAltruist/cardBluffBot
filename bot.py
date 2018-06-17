@@ -39,46 +39,46 @@ def isCorrectSuit(c):
 
 class Stats():
     def getCursor(self):
-        con = lite.connect("players.db")
-        return con.cursor()
+        with lite.connect("players.db") as con:
+            return con.cursor()
 
     def select(self, id = None):
-        con = lite.connect("players.db")
-        cur = con.cursor()
-        if id is None:
-            cur.execute("SELECT * FROM players")
-            return cur.fetchall()
-        else:
-            print(id)
-            cur.execute("SELECT * FROM players WHERE id = " + str(id))
-            return cur.fetchall()
+        with lite.connect("players.db") as con:
+            cur = con.cursor()
+            if id is None:
+                cur.execute("SELECT * FROM players")
+                return cur.fetchall()
+            else:
+                print(id)
+                cur.execute("SELECT * FROM players WHERE id = " + str(id))
+                return cur.fetchall()
     
     def insert(self, data):
-        con = lite.connect("players.db")
-        cur = con.cursor()
-        cur.executemany("INSERT INTO players VALUES (?,?,?,?,?,?,?)", data) 
-        con.commit()
+        with lite.connect("players.db") as con:
+            cur = con.cursor()
+            cur.executemany("INSERT INTO players VALUES (?,?,?,?,?,?,?)", data) 
+            con.commit()
 
     def edit(self, id, type, newValue):
-        con = lite.connect("players.db")
-        cur = con.cursor()
-        field = ""
-        if type == 1:
-            field = "cntOfDuelWins"
-        elif type == 2:
-            field = "cntOfPartyWins"
-        elif type == 3:
-            field = "cntOfPlayedDuels"
-        elif type == 4:
-            field = "cntOfPlayedParties"
-        elif type == 5:
-            field = "totalAmountOfPlayers"
-        elif type == 6:
-            field = "totalSumOfPlaces"
+        with lite.connect("players.db") as con:
+            cur = con.cursor()
+            field = ""
+            if type == 1:
+                field = "cntOfDuelWins"
+            elif type == 2:
+                field = "cntOfPartyWins"
+            elif type == 3:
+                field = "cntOfPlayedDuels"
+            elif type == 4:
+                field = "cntOfPlayedParties"
+            elif type == 5:
+                field = "totalAmountOfPlayers"
+            elif type == 6:
+                field = "totalSumOfPlaces"
 
-        sql = "UPDATE players SET " + field + " = " + str(newValue) + " WHERE id = " + str(self.id)
-        cur.execute(sql)
-        con.commit()
+            sql = "UPDATE players SET " + field + " = " + str(newValue) + " WHERE id = " + str(self.id)
+            cur.execute(sql)
+            con.commit()
 
 
     def __init__(self, id):
@@ -576,8 +576,8 @@ class Game:
 def initializeFromDatabase():
     global con
     try: 
-        con = lite.connect('players.db')
-        cur = con.cursor()
+        with lite.connect("players.db") as con:
+            cur = con.cursor()
     except lite.Error as e:
         print("Database connection error")
 
