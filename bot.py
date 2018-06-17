@@ -168,9 +168,9 @@ class Player:
     def leave(self, game):
         self.chat_id = None
         restNumberOfPlayers = len(game.alivePlayers)
-        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 5):
+        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 0):
             self.stats.addDuel(restNumberOfPlayers)
-        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 5):
+        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 0):
             self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
     
   
