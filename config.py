@@ -1,2 +1,2 @@
-token = '572605462:AAHJZFgDkRilYhxmOYGTIPX5iA12VZ262PI'
+token = '592612525:AAFacxUlJy82mxUYP0hmlz9ujdD-1WBiVow'
 maxNumberOfPlayers = 8
