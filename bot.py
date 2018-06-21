@@ -716,7 +716,7 @@ def getHands(message):
     helplist += "7 - Four of a kind (four cards of one rank): (/m 70, four tens)\n"
     helplist += "8 - Straight flush (five cards of sequential rank and same suit, you have to provide highest card and suit): (/m 8J, Straight flush up to jack)\n"
     try:
-        (message.chat.id, helplist)
+        bot.send_message(message.chat.id, helplist)
     except Exception as e:
         logging.info(str(e))
 
