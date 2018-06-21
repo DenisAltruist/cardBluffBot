@@ -1,6 +1,7 @@
 from __future__ import division
 
 import telebot
+import logging
 import config
 import json
 import random
@@ -191,7 +192,7 @@ class Player:
         try:
             bot.send_message(self.id, cardSet)
         except Exception as e:
-            print("Sending to ban or not started user")
+            logging.info("(sendCards)User id: " + str(self.id) + "\n" + "Response: " + str(e))
     
     def register(self):
         self.isRegistered = True
@@ -219,6 +220,7 @@ class Game:
         self.finishAmountOfCards = 0
         self.numberOfCards = dict()
         self.cntOfCardsByRang = dict()
+        self.stringOfMove = ""
         
     def isHigherHand(self, nextHand):
         if nextHand[0] < self.currHand[0]:
@@ -257,7 +259,10 @@ class Game:
         return 'List of players: ' + str(self.numberOfPlayers) + '\n' + self.playlist
         
     def checkPlaylist(self):
-        bot.edit_message_text(chat_id = self.chat_id, message_id = self.message_id, text = self.getListOfPlayers(), reply_markup = self.keyboard, parse_mode='HTML')
+        try:
+            bot.edit_message_text(chat_id = self.chat_id, message_id = self.message_id, text = self.getListOfPlayers(), reply_markup = self.keyboard, parse_mode='HTML')
+        except Exception as e:
+            logging.info(e)
     
     def getName(self, player):
         res = player.first_name
@@ -267,7 +272,6 @@ class Game:
     
     def addPlayer(self, message, player):
         if self.players.count(player) > 0:
-            self.printOut(self.getName(player) + ", you have already joined")
             return
         if not(player.chat_id is None):
             self.printOut(self.getName(player) + ", you can play only one game at a time")
@@ -303,19 +307,28 @@ class Game:
         self.printOut("Number of cards:\n" + res)
 
     def printOut(self, message):
-        bot.send_message(self.chat_id, message, parse_mode = 'HTML')
+        try: 
+            bot.send_message(self.chat_id, message, parse_mode = 'HTML')
+        except Exception as e:
+            logging.info("(printOut)Chat id: " + str(self.chat_id) + "\n" + "Response: " + str(e))
     
     def createGame(self, message, keyboard):
         if self.isCreated:
             self.printOut("The game has been created before")
             return
-
-        self.isCreated = True
-        self.numberOfPlayers = 0
-        self.keyboard = keyboard
-        sentMsg = bot.send_message(self.chat_id, self.getListOfPlayers(), reply_markup = self.keyboard, parse_mode = 'HTML')
-        self.chat_id = sentMsg.chat.id
-        self.message_id = sentMsg.message_id
+        
+        sentMsg = None
+        try:
+            sentMsg = bot.send_message(self.chat_id, self.getListOfPlayers(), reply_markup = keyboard, parse_mode = 'HTML')
+        except Exception as e:
+            logging.info("(createGame)Chat id: " + str(self.chat_id) + "\n" + "Response: " + str(e))
+        
+        if not (sentMsg is None):
+            self.isCreated = True
+            self.numberOfPlayers = 0
+            self.keyboard = keyboard
+            self.chat_id = sentMsg.chat.id
+            self.message_id = sentMsg.message_id
    
     def removePlayer(self, player):
         if self.isCreated == False:
@@ -397,7 +410,7 @@ class Game:
         if self.isStarted:
             self.printOut(self.getName(player) + ", the game has started yet")
             return
-        if self.numberOfPlayers < 2:
+        if self.numberOfPlayers < 2: 
             self.printOut(self.getName(player) + ", not enough players to play")
             return
         
@@ -407,8 +420,10 @@ class Game:
         else:
             self.startAmountOfCards = 1
             self.finishAmountOfCards = 5
-
-        bot.delete_message(self.chat_id, self.message_id)
+        try:
+            bot.delete_message(self.chat_id, self.message_id)
+        except Exception as e:
+            logging.info(e)
         self.isStarted = True
         self.currPlayer = 0
         self.alivePlayers = self.players
@@ -435,15 +450,19 @@ class Game:
                 return False
             if not isCorrectCard(s[1]):
                 return False
+            if (s[0] == '4') and (s[1] <= '4'):
+                return False
             return True
 
         if len(s) != 3:
             return False
 
         if (s[0] == '5' or s[0] == '8'):
-            if isCorrectCard(s[1]) and isCorrectSuit(s[2]):
-                return True
-            return False
+            if not(isCorrectCard(s[1]) and isCorrectSuit(s[2])):
+                return False
+            if (s[0] == '8' and s[1] <= '4'):
+                return False
+            return True
 
         if (isCorrectCard(s[1]) and isCorrectCard(s[2]) and (s[1] != s[2])):
             return True
@@ -575,20 +594,14 @@ class Game:
 
 
 
-def initializeFromDatabase():
-    global con
-    try: 
-        with lite.connect("players.db") as con:
-            cur = con.cursor()
-    except lite.Error as e:
-        print("Database connection error")
+def initializeLogger():
+    logging.basicConfig(filename='ldata.log', level=logging.INFO)
 
 def registerPlayer(user):
     if playerById.get(user.id) is None:
         playerById[user.id] = Player(user)
 
 def registerChat(id):
-    print(id)
     if (gamesByChatId.get(id) is None) or (gamesByChatId.get(id).isRegistered == False):
         gamesByChatId[id] = Game()
         gamesByChatId[id].getChat(id)
@@ -601,20 +614,40 @@ def isAdmin(message):
 def start(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    bot.send_message(message.chat.id, "Welcome to the CardBluff bot")
+    try: 
+        bot.send_message(message.chat.id, "Welcome to the CardBluff bot")
+    except Exception as e:
+        logging.info("(start)User id: " + str(message.from_user.id) + "\n" + "Response: " + str(e))
+
+@bot.message_handler(commands=['prevmove'])
+def prevmove(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    curGame = gamesByChatId[message.chat.id]
+    if curGame.isStarted:
+        if curGame.isFirstMove:
+            curGame.printOut("It's the first move")
+        else: 
+            curGame.printOut(curGame.stringOfMove)
+        
 
 @bot.message_handler(commands=['cancel'])
 def cancel(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     curGame = gamesByChatId[message.chat.id]
-    print(bot.get_chat_member(message.chat.id, message.from_user.id))
     if curGame.isCreated and isAdmin(message):
         curGame.cancel()
         if not curGame.isStarted:
-            bot.delete_message(curGame.chat_id, curGame.message_id)
+            try: 
+                bot.delete_message(curGame.chat_id, curGame.message_id)
+            except Exception as e:
+                logging.info(str(e))
         gamesByChatId[message.chat.id] = None
-        bot.send_message(message.chat.id, "Successfully canceled")
+        try:
+            bot.send_message(message.chat.id, "Successfully canceled")
+        except Exception as e:
+            logging.info(str(e))
 
 @bot.message_handler(commands=['help'])
 def getHelp(message):
@@ -630,7 +663,10 @@ def getHelp(message):
     rules += "It will be a player who say 'reveal'. After that all players reveal their hands and round will be finished.\n"
     rules += "If it will be a current hand, then the current player will get an additional card in new round.\n"
     rules += "Else, the previous player will get an additional card in new round. The game goes until there is only one player\n"
-    bot.send_message(message.chat.id, rules)
+    try:
+        bot.send_message(message.chat.id, rules)
+    except Exception as e:
+        logging.info(str(e))
 
 
 @bot.message_handler(commands=['stats'])
@@ -641,9 +677,15 @@ def getStats(message):
         msg = message.reply_to_message
         registerChat(msg.chat.id)
         registerPlayer(msg.from_user)
-        bot.send_message(msg.chat.id, playerById[msg.from_user.id].getStats())
+        try:
+            bot.send_message(msg.chat.id, playerById[msg.from_user.id].getStats())
+        except Exception as e:
+            logging.info(str(e))
     else:
-        bot.send_message(message.chat.id, playerById[message.from_user.id].getStats())
+        try:
+            bot.send_message(message.chat.id, playerById[message.from_user.id].getStats())
+        except Exception as e:
+            logging.info(str(e))
 
 
 @bot.message_handler(commands=['suits'])
@@ -653,7 +695,10 @@ def getSuits(message):
     helplist = 'Suits:\n'
     helplist += '0 - ' + cardSuits[0] + '\n' + '1 - ' + cardSuits[1] + '\n'
     helplist += '2 - ' + cardSuits[2] + '\n' + '3 - ' + cardSuits[3] + '\n'
-    bot.send_message(message.chat.id, helplist)
+    try:
+        bot.send_message(message.chat.id, helplist)
+    except Exception as e:
+        logging.info(str(e))
 
 @bot.message_handler(commands=['hands'])
 def getHands(message):
@@ -670,7 +715,10 @@ def getHands(message):
     helplist += "6 - Full house (three cards of one rank and two cards of another one rank): (/m 6JK, three jacks and two kings)\n"
     helplist += "7 - Four of a kind (four cards of one rank): (/m 70, four tens)\n"
     helplist += "8 - Straight flush (five cards of sequential rank and same suit, you have to provide highest card and suit): (/m 8J, Straight flush up to jack)\n"
-    bot.send_message(message.chat.id, helplist)
+    try:
+        (message.chat.id, helplist)
+    except Exception as e:
+        logging.info(str(e))
 
 @bot.message_handler(commands=['creategame'])
 def creategame(message):
@@ -740,6 +788,7 @@ def getmessage(message):
             currGame.printOut("It's a not higher than current")
         else:                
             currGame.updateHand(currGame.parseStringToHand(currText))
+            currGame.stringOfMove = currText
         currGame.logMove()
     else: 
         if currGame.isStarted:
@@ -749,19 +798,20 @@ def getmessage(message):
 
 @bot.message_handler(content_types = ['text'])
 def getm(message):
-    print(message.from_user.id)
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     if (message.text == "go"):
-        bot.send_message(message.chat.id, "successfully")
-        print(message.from_user.id)
+        try:
+            bot.send_message(message.chat.id, "successfully")
+        except Exception as e:
+            logging.info(str(e))
         playerById[message.from_user.id].register()
 
-initializeFromDatabase()
+initializeLogger()
 while True:
     try:
         bot.polling(none_stop=True)
     except Exception as e:
-        print("Internet error")
+        logging.info(str(e))
         time.sleep(5)
 
