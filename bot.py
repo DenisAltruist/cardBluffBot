@@ -450,7 +450,7 @@ class Game:
                 return False
             if not isCorrectCard(s[1]):
                 return False
-            if (s[0] == '4') and (s[1] <= '4'):
+            if (s[0] == '4') and (s[1] <= '4') and (s[1] != '0'):
                 return False
             return True
 
@@ -460,7 +460,9 @@ class Game:
         if (s[0] == '5' or s[0] == '8'):
             if not(isCorrectCard(s[1]) and isCorrectSuit(s[2])):
                 return False
-            if (s[1] <= '4' and s[1] != '0'):
+            if (s[0] == '5' and s[1] <= '5' and s[1] >= '1')
+                return False
+            if (s[0] == '8' and s[1] <= '4' and s[1] >= '1'):
                 return False
             return True
 
