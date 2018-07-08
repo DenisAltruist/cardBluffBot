@@ -716,7 +716,7 @@ def getHelp(message):
     rules += "(you can find all hands and how to move using /hands), hand must be higher than the previous one. After this, the move passes to another player\n"
     rules += "It will be a player who say 'reveal'. After that all players reveal their hands and round will be finished.\n"
     rules += "If it will be a current hand, then the current player will get an additional card in new round.\n"
-    rules += "Else, the previous player will get an additional card in new round. The game goes until there is only one player\n"
+    rules += "Else, the previous player will get an additional card in new round. The game goes until there is only one player.\n"
     try:
         bot.send_message(message.chat.id, rules)
     except Exception as e:
