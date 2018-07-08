@@ -212,7 +212,7 @@ class Player:
         if not game.isStarted:
             return
         restNumberOfPlayers = len(game.alivePlayers)
-        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 0):
+        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 5):
             print(len(game.players))
             opponent = game.players[0]
             if opponent == self:
