@@ -59,7 +59,7 @@ class Stats():
     def insert(self, data):
         with lite.connect("players.db") as con:
             cur = con.cursor()
-            cur.executemany("INSERT INTO players VALUES (?,?,?,?,?,?,?)", data) 
+            cur.executemany("INSERT INTO players VALUES (?,?,?,?,?,?,?,?)", data) 
             con.commit()
 
     def edit(self, id, type, newValue):
@@ -78,6 +78,8 @@ class Stats():
                 field = "totalAmountOfPlayers"
             elif type == 6:
                 field = "totalSumOfPlaces"
+            elif type == 7:
+                field = "duelsRating"
 
             sql = "UPDATE players SET " + field + " = " + str(newValue) + " WHERE id = " + str(self.id)
             cur.execute(sql)
@@ -87,25 +89,59 @@ class Stats():
     def __init__(self, id):
         self.data = self.select(id)
         self.id = id
+        self.previousRate = '1200'
         if self.data == []:
-            self.data = [str(id), '0', '0', '0', '0', '0', '0']
-            self.insert([(str(id), '0', '0', '0', '0', '0', '0')])
+            self.data = [str(id), '0', '0', '0', '0', '0', '0', '1200']
+            self.insert([(str(id), '0', '0', '0', '0', '0', '0', '1200')])
         else:
             self.data = list(self.data[0])
 
 
-    def change(self, tp, delta):
-        self.data[tp] = str(int(self.data[tp]) + delta)
+    def change(self, tp, delta):    
+        self.data[tp] = str(max(0, int(self.data[tp]) + delta))
         self.edit(self.id, tp, self.data[tp])
 
-    def addDuel(self, place):
+    def checkDuelRating(self):
+        if self.data[7] == '-' or self.data[7] is None or self.data[7] == '':
+            self.data[7] = '1200'
+
+    def addDuel(self, place, opponentStats):
+        self.checkDuelRating()
         if place == 1:
             self.change(1, 1)
-            self.change(6, 1) 
+            self.change(6, 1)
         else:
             self.change(6, 2)
         self.change(5, 2)
         self.change(3, 1)
+            
+        #ELO
+        opponentStats.checkDuelRating()
+        Ra = int(self.data[7])
+        if place == 2:
+            Rb = int(opponentStats.data[7])
+        else:
+            Rb = int(opponentStats.previousRate)
+        Exp = 1 / (1 + 10**((Rb - Ra) / 400))
+        Real = (place == 1)
+            
+        #K-factor
+        cntOfPlayedDuels = int(self.data[3])
+        if cntOfPlayedDuels <= 15 or Ra <= 1500:
+            K = 40
+        elif Ra <= 2000:
+            K = 30
+        elif Ra <= 2400:
+            K = 20
+        else:
+            K = 10
+
+        newDuelRating = round(Ra + K * (Real - Exp))
+        self.previousRate = self.data[7]
+        self.change(7, newDuelRating - Ra) 
+
+
+        
 
     def addParty(self, place, numberOfPlayers):
         if place == 1:
@@ -141,7 +177,8 @@ class Stats():
             val = (1 - curVal) / (1 - bestVal) * 100
 
         skill = str(round(val, 2))
-        res = "Duels played: " + self.data[3] + "\n"
+        res = "Duels rating: " + self.data[7] + "\n"
+        res += "Duels played: " + self.data[3] + "\n"
         res += "Duel winrate: " + duelWinrate + "%\n"
         res += "Parties played: " + self.data[4] + "\n"
         res += "Party winrate: " + partyWinrate + "%\n"
@@ -170,9 +207,18 @@ class Player:
     
     def leave(self, game):
         self.chat_id = None
+        if not game.isStarted:
+            return
         restNumberOfPlayers = len(game.alivePlayers)
-        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 5):
-            self.stats.addDuel(restNumberOfPlayers)
+        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 0):
+            print(len(game.players))
+            opponent = game.players[0]
+            if opponent == self:
+                opponent = game.players[1]
+                print("1")
+            else:
+                print("0")
+            self.stats.addDuel(restNumberOfPlayers, opponent.stats)
         elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 5):
             self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
     
@@ -377,8 +423,8 @@ class Game:
         self.printOut(self.getLinkedName(player) + ', your turn')
 
     def startRound(self):
-        
-        shuffle(self.alivePlayers)
+        if self.numberOfPlayers != 2:
+            shuffle(self.alivePlayers)
         shuffle(self.cardDeck)
         for player in self.players:
             self.isLooser[player] = False
@@ -426,7 +472,10 @@ class Game:
             logging.info(e)
         self.isStarted = True
         self.currPlayer = 0
-        self.alivePlayers = self.players
+        
+        #goodCopyingPython
+        self.alivePlayers = self.players.copy()
+    
         self.numberOfCardsInGame = self.numberOfPlayers * self.startAmountOfCards
         for player in self.alivePlayers:
             self.numberOfCards[player] = self.startAmountOfCards
@@ -475,7 +524,7 @@ class Game:
         self.currPlayer += 1
         if self.currPlayer == len(self.alivePlayers):
             self.currPlayer = 0
-        self.callToMove(self.players[self.currPlayer])
+        self.callToMove(self.alivePlayers[self.currPlayer])
     
     def addCardsToPlayer(self, player, cnt):
         self.isLooser[player] = True
@@ -574,9 +623,9 @@ class Game:
                 prevPlayer += len(self.alivePlayers)
 
             if self.hasHand():
-                self.addCardsToPlayer(self.players[self.currPlayer], 1)
+                self.addCardsToPlayer(self.alivePlayers[self.currPlayer], 1)
             else:
-                self.addCardsToPlayer(self.players[prevPlayer], 1)
+                self.addCardsToPlayer(self.alivePlayers[prevPlayer], 1)
         else:
             self.addCardsToPlayer(leaver, self.finishAmountOfCards + 1 - self.numberOfCards[leaver])
         self.currHand = [-1, -1, -1]
@@ -611,6 +660,7 @@ def registerChat(id):
 def isAdmin(message):
     status = bot.get_chat_member(message.chat.id, message.from_user.id).status
     return (status == 'creator') or (status == 'administrator') or (message.chat.id == message.from_user.id)
+
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -677,8 +727,6 @@ def getStats(message):
     registerPlayer(message.from_user)
     if not(message.reply_to_message is None):
         msg = message.reply_to_message
-        registerChat(msg.chat.id)
-        registerPlayer(msg.from_user)
         try:
             bot.send_message(msg.chat.id, playerById[msg.from_user.id].getStats())
         except Exception as e:
@@ -688,6 +736,20 @@ def getStats(message):
             bot.send_message(message.chat.id, playerById[message.from_user.id].getStats())
         except Exception as e:
             logging.info(str(e))
+
+
+@bot.message_handler(commands=['kick'])
+def kick(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    if message.reply_to_message is None or not isAdmin(message):
+        return
+    msg = message.reply_to_message
+    registerChat(msg.chat.id)
+    registerPlayer(msg.from_user)
+    curGame = gamesByChatId[msg.chat.id]
+    if not(curGame is None):
+        curGame.removePlayer(playerById[msg.from_user.id])
 
 
 @bot.message_handler(commands=['suits'])
@@ -765,7 +827,7 @@ def getmsg(message):
     currPlayer = playerById[message.from_user.id]
     if (not currGame.isCreated or not currGame.isStarted):
         return
-    if (currPlayer != currGame.players[currGame.currPlayer]):
+    if (currPlayer != currGame.alivePlayers[currGame.currPlayer]):
         return
     if currGame.firstMove():
         currGame.printOut("You can't reveal at the first move")
