@@ -477,7 +477,8 @@ class Game:
         self.currPlayer = 0
         
         #goodCopyingPython
-        self.alivePlayers = self.players.copy()
+        for player in self.players:
+            self.alivePlayers.append(player)
     
         self.numberOfCardsInGame = self.numberOfPlayers * self.startAmountOfCards
         for player in self.alivePlayers:
