@@ -104,7 +104,7 @@ class Stats():
         self.edit(self.id, tp, self.data[tp])
 
     def checkDuelRating(self):
-        if self.data[7] == '-' or self.data[7] is None or self.data[7] == '':
+        if (self.data[7] == '-') or (self.data[7] is None) or (self.data[7] == ''):
             self.data[7] = '1200'
 
     def addDuel(self, place, opponentStats):
@@ -240,7 +240,6 @@ class Player:
         try:
             bot.send_message(self.id, cardSet)
         except Exception as e:
-            print("LOL")
             logging.info("(sendCards)User id: " + str(self.id) + "\n" + "Response: " + str(e))
     
     def register(self):
