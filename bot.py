@@ -138,7 +138,7 @@ class Stats():
         else:
             K = 10
 
-        newDuelRating = round(Ra + K * (Real - Exp))
+        newDuelRating = int(Ra + K * (Real - Exp))
         self.previousRate = self.data[7]
         self.change(7, newDuelRating - Ra) 
 
