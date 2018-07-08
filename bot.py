@@ -96,6 +96,7 @@ class Stats():
             self.insert([(str(id), '0', '0', '0', '0', '0', '0', '1200')])
         else:
             self.data = list(self.data[0])
+        self.checkDuelRating()
 
 
     def change(self, tp, delta):    
@@ -728,6 +729,8 @@ def getStats(message):
     registerPlayer(message.from_user)
     if not(message.reply_to_message is None):
         msg = message.reply_to_message
+        registerChat(msg.chat.id)
+        registerPlayer(msg.from_user.id)
         try:
             bot.send_message(msg.chat.id, playerById[msg.from_user.id].getStats())
         except Exception as e:
