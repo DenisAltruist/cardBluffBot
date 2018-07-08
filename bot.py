@@ -240,6 +240,7 @@ class Player:
         try:
             bot.send_message(self.id, cardSet)
         except Exception as e:
+            print("LOL")
             logging.info("(sendCards)User id: " + str(self.id) + "\n" + "Response: " + str(e))
     
     def register(self):
@@ -428,7 +429,7 @@ class Game:
         if self.numberOfPlayers != 2:
             shuffle(self.alivePlayers)
         shuffle(self.cardDeck)
-        for player in self.players:
+        for player in self.alivePlayers:
             self.isLooser[player] = False
 
         curPos = 0
@@ -642,7 +643,7 @@ class Game:
         self.isRegistered = True
 
     def cancel(self):
-        for player in self.players:
+        for player in self.alivePlayers:
             player.leave(self)
 
 
