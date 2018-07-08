@@ -22,6 +22,7 @@ con = None
     #cntOfPlayedParties
     #totalAmountOfPlayers
     #totalSumOfPlaces
+    #duelsRating
 
 
 bot = telebot.TeleBot(config.token)
@@ -177,7 +178,7 @@ class Stats():
             val = (1 - curVal) / (1 - bestVal) * 100
 
         skill = str(round(val, 2))
-        res = "Duels rating: " + self.data[7] + "\n"
+        res = "Duel rating: " + self.data[7] + "\n"
         res += "Duels played: " + self.data[3] + "\n"
         res += "Duel winrate: " + duelWinrate + "%\n"
         res += "Parties played: " + self.data[4] + "\n"
@@ -454,7 +455,7 @@ class Game:
             self.printOut(self.getName(player) +  ", the game hasn't created yet")
             return
         if self.isStarted:
-            self.printOut(self.getName(player) + ", the game has started yet")
+            self.printOut(self.getName(player) + ", the game has already started")
             return
         if self.numberOfPlayers < 2: 
             self.printOut(self.getName(player) + ", not enough players to play")
@@ -710,7 +711,7 @@ def getHelp(message):
     rules += "In the moment of playing each player has from one to five cards only knows for him\n"
     rules += "If you will have more than five cards - you will be a loser.\n"
     rules += "There is some order of moves in each round. If player has to move, he has to say new hand(it has to be higher, than current)\n"
-    rules += "or say 'reveal' to check the current hand (/m - command to move, /r - command to 'reveal'). If player choose the first, he has to choose poker hand\n"
+    rules += "or say 'reveal' to check the current hand (/m - command to move, /r - command to 'reveal'). If player moves, he has to choose poker hand\n"
     rules += "(you can find all hands and how to move using /hands), hand must be higher than the previous one. After this, the move passes to another player\n"
     rules += "It will be a player who say 'reveal'. After that all players reveal their hands and round will be finished.\n"
     rules += "If it will be a current hand, then the current player will get an additional card in new round.\n"
@@ -768,17 +769,17 @@ def getSuits(message):
 def getHands(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    helplist = 'Hands in in ascending order:\n'
+    helplist = 'Hands in ascending order:\n'
     helplist += "0 - High card (example of move: /m 0K, kicker king)\n"
     helplist += "1 - One pair: (/m 18, pair of eights)\n"
     helplist += "2 - Two pairs: (/m 28J, two pairs of eights and jacks)\n"
     helplist += "3 - Three of a kind(set): (/m 3K, three kings)\n"
     helplist += "4 - Straight (five cards of sequential rank, like 23456, you have to provide highest card): (/m 46, straight up to six)\n"
-    helplist += "5 - Flush (five cards with same suit, you have to provide highest card(it must be in hand!): (/m 5K0, heart flush up to king)\n"
+    helplist += "5 - Flush (five cards with same suit, you have to provide highest card): (/m 5K0, heart flush up to king)\n"
     helplist += "Also, if the higher card is less then the hand is higher (not in like poker hands)\n"
-    helplist += "6 - Full house (three cards of one rank and two cards of another one rank): (/m 6JK, three jacks and two kings)\n"
-    helplist += "7 - Four of a kind (four cards of one rank): (/m 70, four tens)\n"
-    helplist += "8 - Straight flush (five cards of sequential rank and same suit, you have to provide highest card and suit): (/m 8J, Straight flush up to jack)\n"
+    helplist += "6 - Full house (three cards of the same rank and two cards of another same rank): (/m 6JK, three jacks and two kings)\n"
+    helplist += "7 - Four of a kind (four cards of the same rank): (/m 70, four tens)\n"
+    helplist += "8 - Straight flush (five cards of sequential rank and same suit, you have to provide highest card and suit): (/m 8J0, Heart straight flush up to jack)\n"
     try:
         bot.send_message(message.chat.id, helplist)
     except Exception as e:
