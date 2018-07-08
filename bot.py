@@ -644,8 +644,12 @@ class Game:
         self.isRegistered = True
 
     def cancel(self):
-        for player in self.alivePlayers:
-            player.leave(self)
+        if self.isStarted:
+            for player in self.alivePlayers:
+                player.leave(self)
+        else:
+            for player in self.players:
+                player.leave(self)
 
 
 
