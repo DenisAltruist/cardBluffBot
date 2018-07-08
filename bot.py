@@ -428,6 +428,8 @@ class Game:
     def startRound(self):
         if self.numberOfPlayers != 2:
             shuffle(self.alivePlayers)
+        else:
+            self.alivePlayers = list(reversed(self.alivePlayers))
         shuffle(self.cardDeck)
         for player in self.alivePlayers:
             self.isLooser[player] = False
@@ -736,10 +738,11 @@ def getStats(message):
     if not(message.reply_to_message is None):
         msg = message.reply_to_message
         registerChat(msg.chat.id)
-        registerPlayer(msg.from_user.id)
+        registerPlayer(msg.from_user)
         try:
             bot.send_message(msg.chat.id, playerById[msg.from_user.id].getStats())
         except Exception as e:
+            print("EXCEPTION")
             logging.info(str(e))
     else:
         try:
