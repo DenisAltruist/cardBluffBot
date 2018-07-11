@@ -357,10 +357,7 @@ class Game:
             logging.info(e)
     
     def getName(self, player):
-        res = player.first_name
-        if player.last_name != '':
-            res = res + ' ' + player.last_name
-        return res
+        return player.getFullname()
     
     def addPlayer(self, message, player):
         if self.players.count(player) > 0:
@@ -987,5 +984,5 @@ while True:
         bot.polling(none_stop=True)
     except Exception as e:
         logging.info(str(e))
-        time.sleep(5)
+        time.sleep(2)
 
