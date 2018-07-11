@@ -987,5 +987,5 @@ while True:
         bot.polling(none_stop=True)
     except Exception as e:
         logging.info(str(e))
-        time.sleep(2)
+        time.sleep(5)
 
