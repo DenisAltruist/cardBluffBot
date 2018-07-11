@@ -127,27 +127,29 @@ class Stats():
         #ELO
         opponentStats.checkDuelRating()
         Ra = int(self.data[7])
+        delta = 0
         if place == 2:
             Rb = int(opponentStats.data[7])
-        else:
-            Rb = int(opponentStats.previousRate)
-        Exp = 1 / (1 + 10**((Rb - Ra) / 400))
-        Real = (place == 1)
-            
-        #K-factor
-        cntOfPlayedDuels = int(self.data[3])
-        if cntOfPlayedDuels <= 15 or Ra <= 1500:
-            K = 40
-        elif Ra <= 2000:
-            K = 30
-        elif Ra <= 2400:
-            K = 20
-        else:
-            K = 10
+            Exp = 1 / (1 + 10**((Rb - Ra) / 400))
+            Real = (place == 1)
+                
+            #K-factor
+            cntOfPlayedDuels = int(self.data[3])
+            if cntOfPlayedDuels <= 15 or Ra <= 1500:
+                K = 40
+            elif Ra <= 2000:
+                K = 30
+            elif Ra <= 2400:
+                K = 20
+            else:
+                K = 10
 
-        newDuelRating = int(Ra + K * (Real - Exp))
-        self.previousRate = self.data[7]
-        self.change(7, newDuelRating - Ra) 
+            newDuelRating = int(Ra + K * (Real - Exp))
+            self.previousRate = self.data[7]
+            delta = newDuelRating - Ra
+        else:
+            delta = int(opponentStats.previousRate) - int(opponentStats.data[7])
+        self.change(7, delta) 
 
 
         
@@ -246,13 +248,9 @@ class Player:
             return
         restNumberOfPlayers = len(game.alivePlayers)
         if (game.numberOfPlayers == 2 and game.numberOfRounds >= 5):
-            print(len(game.players))
             opponent = game.players[0]
             if opponent == self:
                 opponent = game.players[1]
-                print("1")
-            else:
-                print("0")
             self.stats.addDuel(restNumberOfPlayers, opponent.stats)
         elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 5):
             self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
@@ -812,7 +810,6 @@ def getStats(message):
         try:
             bot.send_message(msg.chat.id, playerById[msg.from_user.id].getStats())
         except Exception as e:
-            print("EXCEPTION")
             logging.info(str(e))
     else:
         try:
