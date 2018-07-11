@@ -23,6 +23,7 @@ con = None
     #totalAmountOfPlayers
     #totalSumOfPlaces
     #duelsRating
+    #fullname
 
 
 bot = telebot.TeleBot(config.token)
@@ -31,6 +32,10 @@ cardSuits = [u'\U00002764', u'\U00002666', u'\U00002660', u'\U00002663']
 neutral = u'\U0001F610'
 typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "j": 9, "q": 10, "k": 11, "a": 12}
 playerById = dict()
+
+
+def getDuelScoreFormat(place, player):
+    return (str(place) + ". " + player.getFullname() + " (" + player.getDuelRating() + ")")
 
 def isCorrectCard(c):
     if not (c == 'j' or c == 'q' or c == 'k' or c == 'a' or c == '0' or (c >= '2' and c <= '9')):
@@ -60,7 +65,7 @@ class Stats():
     def insert(self, data):
         with lite.connect("players.db") as con:
             cur = con.cursor()
-            cur.executemany("INSERT INTO players VALUES (?,?,?,?,?,?,?,?)", data) 
+            cur.executemany("INSERT INTO players VALUES (?,?,?,?,?,?,?,?,?)", data) 
             con.commit()
 
     def edit(self, id, type, newValue):
@@ -81,19 +86,21 @@ class Stats():
                 field = "totalSumOfPlaces"
             elif type == 7:
                 field = "duelsRating"
+            elif type == 8:
+                field = "fullname"
 
             sql = "UPDATE players SET " + field + " = " + str(newValue) + " WHERE id = " + str(self.id)
             cur.execute(sql)
             con.commit()
 
 
-    def __init__(self, id):
+    def __init__(self, id, fullname):
         self.data = self.select(id)
         self.id = id
         self.previousRate = '1200'
         if self.data == []:
-            self.data = [str(id), '0', '0', '0', '0', '0', '0', '1200']
-            self.insert([(str(id), '0', '0', '0', '0', '0', '0', '1200')])
+            self.data = [str(id), '0', '0', '0', '0', '0', '0', '1200', fullname]
+            self.insert([(str(id), '0', '0', '0', '0', '0', '0', '1200', fullname)])
         else:
             self.data = list(self.data[0])
         self.checkDuelRating()
@@ -179,7 +186,10 @@ class Stats():
             val = (1 - curVal) / (1 - bestVal) * 100
 
         skill = str(round(val, 2))
-        res = "Duel rating: " + self.data[7] + "\n"
+        currRating = self.data[7]
+        if self.data[3] == '0':
+            currRating = '-'
+        res = "Duel rating: " + currRating + "\n"
         res += "Duels played: " + self.data[3] + "\n"
         res += "Duel winrate: " + duelWinrate + "%\n"
         res += "Parties played: " + self.data[4] + "\n"
@@ -187,22 +197,45 @@ class Stats():
         res += "Skill: " + skill + "%\n"
         return res
 
+
+#bestK
+def getBestPlayers(k):
+    with lite.connect("players.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT * FROM players")
+        data = cur.fetchall()
+        res = []
+        for i in range(len(data)):
+            if data[i][7] == '-':
+                res.append([1, data[i][0]])
+            else:
+                res.append([-int(data[i][7]), data[i][0]])
+
+        res = sorted(res)
+        ids = []
+        for i in range(min(len(res), k)):
+            ids.append(int(res[i][1]))
+        return ids
+
+
 class Player:
     def __init__(self, user):
+        if user.first_name is None:
+            user.first_name = ""
+        if user.last_name is None:
+            user.last_name = ""
+
         self.id = user.id
-
-        self.first_name = user.first_name
-        if (self.first_name is None):
-            self.first_name = ""
-
-        self.last_name = user.last_name
-        if (self.last_name is None):
-            self.last_name = ""
+        self.fullname = user.first_name
+        if (self.fullname == ""):
+            self.fullname = user.last_name
+        elif user.last_name != "":
+            self.fullname = self.fullname + " " + user.last_name
 
         self.chat_id = None
         self.isRegistered = False
         self.numberOfCards = 0
-        self.stats = Stats(self.id)
+        self.stats = Stats(self.id, self.fullname)
     
     def join(self, game):
         self.chat_id = game.chat_id
@@ -226,12 +259,23 @@ class Player:
     
   
     def getFullname(self):
-        res = self.first_name
-        if (res == ""):
-            res = self.last_name
-        elif self.last_name != "":
-            res = res + " " + self.last_name
+        return self.fullname
+    
+    def getDuelRating(self):
+        res = self.stats.data[7]
+        if self.stats.data[3] == '0':
+            res = '-'
         return res
+    
+    #in the moment after end of duel (troubles in other situations beacause previousRate is undef)
+    def getDeltaDuelRating(self):
+        currRate = int(self.stats.data[7])
+        prevRate = int(self.stats.previousRate)
+        delta = currRate - prevRate
+        if delta > 0:
+            return "+" + str(delta)
+        else:
+            return str(delta)
 
     def getStats(self):
         return self.getFullname() + " stats:\n" + self.stats.getStats()
@@ -618,6 +662,17 @@ class Game:
     def finish(self):
         self.alivePlayers[0].leave(self)
         self.printOut('The winner is ' + self.getLinkedName(self.alivePlayers[0]))
+        if self.numberOfPlayers == 2:
+            time.sleep(1)
+            winner = self.alivePlayers[0]
+            looser = self.players[0]
+            if looser == winner:
+                looser = self.players[1]
+            ratingMsg = "Duel rating changes:\n"
+            ratingMsg += getDuelScoreFormat(1, winner) + " " + winner.getDeltaDuelRating() + "\n"
+            ratingMsg += getDuelScoreFormat(2, looser) + " " + looser.getDeltaDuelRating() + "\n"
+            self.printOut(ratingMsg)
+
         self.__init__()
 
     def finishRound(self, leaver = None):
@@ -652,6 +707,25 @@ class Game:
             for player in self.players:
                 player.leave(self)
 
+
+
+
+def initializeFromDatabase():
+    class PseudoUser:
+        def __init__(self, id, fullname):
+            self.first_name = fullname
+            self.last_name = ""
+            self.id = id
+
+    with lite.connect("players.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT * FROM players")
+        data = cur.fetchall()
+        for i in range(len(data)):
+            currId = int(data[i][0])
+            fullname = data[i][8]
+            user = PseudoUser(currId, fullname)
+            playerById[currId] = Player(user)
 
 
 def initializeLogger():
@@ -847,6 +921,29 @@ def getmsg(message):
         currGame.finishRound()   
     gamesByChatId[message.chat.id] = currGame
 
+
+@bot.message_handler(commands=['top'])
+def getTop(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    currText = message.text[5:]
+    bestK = 0
+    try: 
+        bestK = int(currText)
+    except ValueError:
+        return
+    if bestK <= 0:
+        return
+    bestPlayers = getBestPlayers(bestK)
+    result = ''
+    for i in range(len(bestPlayers)):
+        player = playerById[bestPlayers[i]]
+        result += getDuelScoreFormat(i + 1, player) + "\n"
+    try:
+        bot.send_message(message.chat.id, result)
+    except Exception as e:
+        logging.info(str(e)) 
+
 @bot.message_handler(commands=['m'])
 def getmessage(message):
     registerChat(message.chat.id)
@@ -883,11 +980,12 @@ def getm(message):
             logging.info(str(e))
         playerById[message.from_user.id].register()
 
+initializeFromDatabase()
 initializeLogger()
 while True:
     try:
         bot.polling(none_stop=True)
     except Exception as e:
         logging.info(str(e))
-        time.sleep(5)
+        time.sleep(2)
 
