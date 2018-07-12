@@ -143,12 +143,11 @@ class Stats():
                 K = 20
             else:
                 K = 10
-
             newDuelRating = int(Ra + K * (Real - Exp))
-            self.previousRate = self.data[7]
             delta = newDuelRating - Ra
         else:
             delta = int(opponentStats.previousRate) - int(opponentStats.data[7])
+        self.previousRate = self.data[7]
         self.change(7, delta) 
 
 
@@ -208,7 +207,7 @@ def getBestPlayers(k):
         data = cur.fetchall()
         res = []
         for i in range(len(data)):
-            if data[i][7] == '-':
+            if data[i][3] == '0':
                 res.append([1, data[i][0]])
             else:
                 res.append([-int(data[i][7]), data[i][0]])
