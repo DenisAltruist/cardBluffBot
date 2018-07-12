@@ -783,7 +783,7 @@ def getHelp(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     rules = "Rules:\n"
-    rules += "The game consists of few rounds. In the start of the game, each player has one card.\n"
+    rules += "The game consists of few rounds. In the start of the game, each player has one card. (Party game)\n"
     rules += "In the moment of playing each player has from one to five cards only knows for him\n"
     rules += "If you will have more than five cards - you will be a loser.\n"
     rules += "There is some order of moves in each round. If player has to move, he has to say new hand(it has to be higher, than current)\n"
@@ -792,6 +792,7 @@ def getHelp(message):
     rules += "It will be a player who say 'reveal'. After that all players reveal their hands and round will be finished.\n"
     rules += "If it will be a current hand, then the current player will get an additional card in new round.\n"
     rules += "Else, the previous player will get an additional card in new round. The game goes until there is only one player.\n"
+    rules += "Also, if there are two players in game you will have five cars in begin instead of one card and you will loose after ten cards. (Duel game)"
     try:
         bot.send_message(message.chat.id, rules)
     except Exception as e:
