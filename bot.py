@@ -208,7 +208,7 @@ def getBestPlayers(k):
         res = []
         for i in range(len(data)):
             if data[i][3] == '0':
-                res.append([1, data[i][0]])
+                continue
             else:
                 res.append([-int(data[i][7]), data[i][0]])
 
@@ -383,7 +383,7 @@ class Game:
         res = ''
         for key, value in self.numberOfCards.items():
             res = res + self.getName(key) + ": "
-            if value > self.finishAmountOfCards:
+            if not (key in self.alivePlayers):
                 res = res + "Lost"
             else: 
                 res = res + str(value)
@@ -569,14 +569,26 @@ class Game:
             self.currPlayer = 0
         self.callToMove(self.alivePlayers[self.currPlayer])
     
+    def kick(self, player):
+        player.leave(self)
+        self.alivePlayers.remove(player)
+        self.numberOfCardsInGame -= self.numberOfCards[player]
+    
     def addCardsToPlayer(self, player, cnt):
         self.isLooser[player] = True
         self.numberOfCards[player] += cnt
         self.numberOfCardsInGame += cnt
-        if self.numberOfCards[player] > self.finishAmountOfCards:
-            player.leave(self)
-            self.alivePlayers.remove(player)
-            self.numberOfCardsInGame -= self.numberOfCards[player]
+
+        if len(self.players) == 2:
+            opponent = self.players[0]
+            if player == opponent:
+                opponent = self.players[1]
+            delta = abs(self.numberOfCards[player] - self.numberOfCards[opponent])
+            if (self.numberOfCards[player] > self.finishAmountOfCards) and (delta >= 2 or self.numberOfCards[player] == 27):
+                self.kick(player)
+        else: 
+            if self.numberOfCards[player] > self.finishAmountOfCards:
+                self.kick(player)
             
 
     def checkCntOf(self, rang, count):
@@ -681,7 +693,8 @@ class Game:
             else:
                 self.addCardsToPlayer(self.alivePlayers[prevPlayer], 1)
         else:
-            self.addCardsToPlayer(leaver, self.finishAmountOfCards + 1 - self.numberOfCards[leaver])
+            self.kick(leaver)
+
         self.currHand = [-1, -1, -1]
         self.printNumberOfCards()
         if len(self.alivePlayers) == 1:
@@ -743,8 +756,11 @@ def isAdmin(message):
 def start(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    try: 
-        bot.send_message(message.chat.id, "Welcome to the CardBluff bot")
+    try:
+        answer = "Welcome to the CardBluff Bot.\n"
+        answer += "Используй /help_ru чтобы почитать правила.\n"
+        answer += "Use /help to read rules.\n" 
+        bot.send_message(message.chat.id, answer)
     except Exception as e:
         logging.info("(start)User id: " + str(message.from_user.id) + "\n" + "Response: " + str(e))
 
@@ -793,6 +809,23 @@ def getHelp(message):
     rules += "If it will be a current hand, then the current player will get an additional card in new round.\n"
     rules += "Else, the previous player will get an additional card in new round. The game goes until there is only one player.\n"
     rules += "Also, if there are two players in game you will have five cars in begin instead of one card and you will loose after ten cards. (Duel game)"
+    try:
+        bot.send_message(message.chat.id, rules)
+    except Exception as e:
+        logging.info(str(e))
+
+@bot.message_handler(commands=['help_ru'])
+def getHelpRu(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    rules = "Правила:\n"
+    rules += "1) Для начала отправьте боту в личные сообщение /start, чтобы он мог присылать вам ваши карты. \n\n"
+    rules += "2) Есть два основных режима игры - 'Duel' и 'Party'. Начнём с 'Party':\n\n"
+    rules += "а) В начале игры каждый участник получает по одной карте, которая известна только ему. Дальше будут разыгрываться раунды, по результатам которых будет определяться игрок, который получит дополнительную карту в новом раунде (игрок, который проиграл раунд). Игрок, который получил 6 карт, выбывает из игры. Кто остаётся последним — тот победил.\n\n"
+    rules += "Как проходит раунд: каждый раунд выбирается случайный порядок игроков, в соответствии с которым они будут ходить. Ход заключается в том, что игрок называет любую покерную комбинацию (посмотреть нумерацию комбинаций можно с помощью /hands, а мастей — /suits), которая выше, чем предыдущая (если он ходит первым — то любую), либо он может сказать 'не верю' (/r) и вскрыть предыдущую комбинацию.\n\n" 
+    rules += "Рано или поздно кто-то вскроет текущую комбинацию, так как они повышаются. При вскрытии каждый игрок раскрывает свои карты, и последняя названная комбинации ищется среди всех карт, которые были на руках у игроков в этом раунде. Если она присутствует, то игроку, который сказал 'не верю' будет дана дополнительная карта в новом раунде, а иначе дополнительная карта будет дана игроку, заявившему комбинацию. После вскрытия, колода карт перетасовывается, и каждому игроку раздают столько карт, сколько раундов он проиграл + одна изначальная.\n\n"
+    rules += "б) Режим 'Duel' отличается только тем, что играют два игрока, а первый ход даётся игрокам по очереди. Изначально у обоих игроков по 5 карт, а количество карт для вылета — 10. Для режима 'Duel' есть рейтинг игроков, который можно посмотреть используя /top (если ввести /top 5, то бот покажет 5 лучших игроков). Для того, чтобы поиграть, нужно завести чат и пригласить туда бота.\n\n"
+    rules += "3) Чтобы начать игру, используйте /creategame, затем ждите, пока присоединятся игроки, и используйте /startgame для начала. Остальные комбинации можно посмотреть, написав /."
     try:
         bot.send_message(message.chat.id, rules)
     except Exception as e:
@@ -921,13 +954,16 @@ def getTop(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     currText = message.text[5:]
-    bestK = 0
-    try: 
-        bestK = int(currText)
-    except ValueError:
-        return
-    if bestK <= 0:
-        return
+    if len(message.text) == 4:
+        bestK = 10
+    else:
+        bestK = 0
+        try: 
+            bestK = int(currText)
+        except ValueError:
+            return
+        if bestK <= 0:
+            return
     bestPlayers = getBestPlayers(bestK)
     result = ''
     for i in range(len(bestPlayers)):
