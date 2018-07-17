@@ -864,7 +864,8 @@ def kick(message):
     registerPlayer(msg.from_user)
     curGame = gamesByChatId[msg.chat.id]
     if not(curGame is None):
-        curGame.removePlayer(playerById[msg.from_user.id])
+        if (playerById[msg.from_user.id] in curGame.alivePlayers):
+            curGame.removePlayer(playerById[msg.from_user.id])
 
 
 @bot.message_handler(commands=['suits'])
