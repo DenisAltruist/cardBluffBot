@@ -1001,24 +1001,11 @@ def getmessage(message):
             currGame.printOut("Incorrect move")
     gamesByChatId[message.chat.id] = currGame
 
-
-@bot.message_handler(content_types = ['text'])
-def getm(message):
-    registerChat(message.chat.id)
-    registerPlayer(message.from_user)
-    if (message.text == "go"):
-        try:
-            bot.send_message(message.chat.id, "successfully")
-        except Exception as e:
-            logging.info(str(e))
-        playerById[message.from_user.id].register()
-
 initializeFromDatabase()
 initializeLogger()
 while True:
     try:
-        bot.polling(none_stop=True)
+        bot.polling(none_stop=True, timeout=180)
     except Exception as e:
         logging.info(str(e))
-        time.sleep(2)
 
