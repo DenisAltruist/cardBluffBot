@@ -8,6 +8,8 @@ import json
 import random
 import time
 import sqlite3 as lite
+import cherrypy
+ 
 
 
 from telebot import types
@@ -27,12 +29,28 @@ con = None
     #fullname
 
 
-bot = telebot.TeleBot(config.token)
+bot = telebot.TeleBot(config.TOKEN)
 gamesByChatId = dict()
 cardSuits = [u'\U00002764', u'\U00002666', u'\U00002660', u'\U00002663']
 neutral = u'\U0001F610'
 typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "j": 9, "q": 10, "k": 11, "a": 12}
 playerById = dict()
+
+
+class WebhookServer(object):
+    @cherrypy.expose
+    def index(self):
+        if 'content-length' in cherrypy.request.headers and \
+                        'content-type' in cherrypy.request.headers and \
+                        cherrypy.request.headers['content-type'] == 'application/json':
+            length = int(cherrypy.request.headers['content-length'])
+            json_string = cherrypy.request.body.read(length).decode("utf-8")
+            update = telebot.types.Update.de_json(json_string)
+            # Эта функция обеспечивает проверку входящего сообщения
+            bot.process_new_updates([update])
+            return ''
+        else:
+            raise cherrypy.HTTPError(403)
 
 
 def getDuelScoreFormat(place, player):
@@ -363,7 +381,7 @@ class Game:
         if not(player.chat_id is None):
             self.printOut(self.getName(player) + ", you can play only one game at a time")
             return
-        if self.numberOfPlayers == config.maxNumberOfPlayers:
+        if self.numberOfPlayers == config.MAX_NUMBER_OF_PLAYERS:
             self.printOut(self.getName(player) + ", the maximum number of players has been reached")
             return
         if self.isStarted:
@@ -1003,9 +1021,19 @@ def getmessage(message):
 
 initializeFromDatabase()
 initializeLogger()
-while True:
-    try:
-        bot.polling(none_stop=True, timeout=180)
-    except Exception as e:
-        logging.info(str(e))
+
+bot.remove_webhook()
+bot.set_webhook(url=config.WEBHOOK_URL_BASE + config.WEBHOOK_URL_PATH,
+                certificate=open(config.WEBHOOK_SSL_CERT, 'r'))
+
+cherrypy.config.update({
+    'server.socket_host': config.WEBHOOK_LISTEN,
+    'server.socket_port': config.WEBHOOK_PORT,
+    'server.ssl_module': 'builtin',
+    'server.ssl_certificate': config.WEBHOOK_SSL_CERT,
+    'server.ssl_private_key': config.WEBHOOK_SSL_PRIV
+})
+
+cherrypy.quickstart(WebhookServer(), config.WEBHOOK_URL_PATH, {'/': {}})
+
 
