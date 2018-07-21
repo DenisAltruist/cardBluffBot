@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 TOKEN = '572605462:AAHJZFgDkRilYhxmOYGTIPX5iA12VZ262PI'
 MAX_NUMBER_OF_PLAYERS = 8
 
@@ -10,5 +11,7 @@ WEBHOOK_SSL_PRIV = './private.key'  # Путь к приватному ключ�
 
 WEBHOOK_URL_BASE = "https://%s:%s" % (WEBHOOK_HOST, WEBHOOK_PORT)
 WEBHOOK_URL_PATH = "/%s/" % TOKEN
+
+
 
 
