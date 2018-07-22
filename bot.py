@@ -51,6 +51,8 @@ class WebhookServer(object):
             bot.process_new_updates([update])
             print("AFTER CHECK")
             return ''
+        else:
+            logging.info("Webhooks error")
 
 
 def getDuelScoreFormat(place, player):
