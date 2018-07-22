@@ -47,10 +47,10 @@ class WebhookServer(object):
             json_string = cherrypy.request.body.read(length).decode("utf-8")
             update = telebot.types.Update.de_json(json_string)
             # Эта функция обеспечивает проверку входящего сообщения
+            print("CHECKING INCOMING MSG")
             bot.process_new_updates([update])
+            print("AFTER CHECK")
             return ''
-        else:
-            raise cherrypy.HTTPError(403)
 
 
 def getDuelScoreFormat(place, player):
