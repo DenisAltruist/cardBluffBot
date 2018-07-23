@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
+from threading import Thread
 
 import telebot
 import logging
@@ -30,11 +31,13 @@ con = None
 
 
 bot = telebot.TeleBot(config.TOKEN)
+bot_ = telebot.TeleBot(config.TOKEN)
 gamesByChatId = dict()
 cardSuits = [u'\U00002764', u'\U00002666', u'\U00002660', u'\U00002663']
 neutral = u'\U0001F610'
 typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "j": 9, "q": 10, "k": 11, "a": 12}
 playerById = dict()
+eventSet = []
 
 
 class WebhookServer(object):
@@ -331,6 +334,8 @@ class Game:
         self.numberOfCards = dict()
         self.cntOfCardsByRang = dict()
         self.stringOfMove = ""
+        self.timeBorderToMove = 0
+        self.timeBorderToStart = 0
         
     def isHigherHand(self, nextHand):
         if nextHand[0] < self.currHand[0]:
@@ -364,6 +369,7 @@ class Game:
     
     def getListOfPlayers(self):
         self.playlist = ''
+        #waiting_msg = "You have " + str(config.TIME_TO_START_GAME) + " seconds\nto start the game\n"
         for player in self.players:
             self.playlist = self.playlist + self.getLinkedName(player) + '\n'
         return 'List of players: ' + str(self.numberOfPlayers) + '\n' + self.playlist
@@ -431,6 +437,7 @@ class Game:
             logging.info("(createGame)Chat id: " + str(self.chat_id) + "\n" + "Response: " + str(e))
         
         if not (sentMsg is None):
+            self.addCreatingToEventSet()
             self.isCreated = True
             self.numberOfPlayers = 0
             self.keyboard = keyboard
@@ -481,7 +488,8 @@ class Game:
         return linkedName
     
     def callToMove(self, player):
-        self.printOut(self.getLinkedName(player) + ', your turn')
+        self.printOut(self.getLinkedName(player) + ', ' + 'you have ' + str(config.TIME_TO_MOVE) + ' seconds to move')
+        
 
     def startRound(self):
         if self.numberOfPlayers != 2:
@@ -504,6 +512,8 @@ class Game:
         self.isFirstMove = True
         self.numberOfRounds += 1
         self.currPlayer = 0
+        self.timeBorderToMove = 0
+        self.addMoveToEventSet()
         self.callToMove(self.alivePlayers[self.currPlayer])
         self.cntOfCardsByRang.clear()
         for i in range(self.numberOfCardsInGame):
@@ -512,15 +522,18 @@ class Game:
             else:
                 self.cntOfCardsByRang[self.cardDeck[i] % 13] += 1 
 
-    def start(self, player):
+    def start(self, player = None):
         if self.isCreated == False:
-            self.printOut(self.getName(player) +  ", the game hasn't created yet")
+            if (not player is None):
+                self.printOut(self.getName(player) +  ", the game hasn't created yet")
             return
         if self.isStarted:
-            self.printOut(self.getName(player) + ", the game has already started")
+            if (not player is None):
+                self.printOut(self.getName(player) + ", the game has already started")
             return
-        if self.numberOfPlayers < 2: 
-            self.printOut(self.getName(player) + ", not enough players to play")
+        if self.numberOfPlayers < config.MIN_NUMBER_OF_PLAYERS: 
+            if (not player is None):
+                self.printOut(self.getName(player) + ", not enough players to play")
             return
         
         if self.numberOfPlayers == 2:
@@ -535,6 +548,40 @@ class Game:
             logging.info(e)
         self.isStarted = True
         self.currPlayer = 0
+
+        #goodCopyingPython
+        for player in self.players:
+            self.alivePlayers.append(player)
+    
+        self.numberOfCardsInGame = self.numberOfPlayers * self.startAmountOfCards
+        for player in self.alivePlayers:
+            self.numberOfCards[player] = self.startAmountOfCards
+        self.startRound()
+
+    
+    def addMoveToEventSet(self):
+        if self.timeBorderToMove != 0:
+            self.removeMoveFromEventSet()
+        curTime = int(time.time())
+        global eventSet
+        self.timeBorderToMove = curTime + config.TIME_TO_MOVE
+        eventSet.append([self.timeBorderToMove, self])
+        eventSet = sorted(eventSet)
+    
+    def removeMoveFromEventSet(self):
+        global eventSet
+        eventSet.remove([self.timeBorderToMove, self])
+
+    def addCreatingToEventSet(self):
+        curTime = int(time.time())
+        global eventSet
+        self.timeBorderToStart = curTime + config.TIME_TO_MOVE
+        eventSet.append([self.timeBorderToStart, self])
+        eventSet = sorted(eventSet)
+
+    def removeCreatingFromEventSet(self):
+        global eventSet
+        eventSet.remove([self.timeBorderToStart, self])
         
         #goodCopyingPython
         for player in self.players:
@@ -589,6 +636,7 @@ class Game:
         if self.currPlayer == len(self.alivePlayers):
             self.currPlayer = 0
         self.callToMove(self.alivePlayers[self.currPlayer])
+        self.addMoveToEventSet()
     
     def kick(self, player):
         player.leave(self)
@@ -702,6 +750,11 @@ class Game:
 
         self.__init__()
 
+    def addPenaltyCard(self):
+        self.updateHand([100, 0, 0])
+        self.finishRound()
+
+
     def finishRound(self, leaver = None):
         self.reveal()
         if leaver is None:
@@ -734,9 +787,55 @@ class Game:
         else:
             for player in self.players:
                 player.leave(self)
+            self.removeCreatingFromEventSet()
 
+@bot.message_handler(commands=['cancel'])
+def cancel(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    curGame = gamesByChatId[message.chat.id]
+    if curGame.isCreated and isAdmin(message):
+        curGame.cancel()
+        if not curGame.isStarted:
+            try: 
+                bot.delete_message(curGame.chat_id, curGame.message_id)
+            except Exception as e:
+                logging.info(str(e))
+        gamesByChatId[message.chat.id] = None
+        try:
+            bot.send_message(message.chat.id, "Successfully canceled")
+        except Exception as e:
+            logging.info(str(e))
 
+def pollingEventSet():
+    global eventSet
+    global gamesByChatId
 
+    #fuckups
+    curTime = int(time.time())
+    while ((len(eventSet) != 0) and (eventSet[0][0] < curTime)):
+        eventSet.remove(eventSet[0])
+        eventSet = sorted(eventSet)
+    #
+    if (len(eventSet) == 0):
+        return
+    nextTime = eventSet[0][0]
+    print(str(curTime) + " " + str(nextTime))
+    if curTime == nextTime:
+        curGame = eventSet[0][1]
+        if not curGame.isStarted:
+            if curGame.numberOfPlayers < config.MIN_NUMBER_OF_PLAYERS:
+                try: 
+                    bot.delete_message(curGame.chat_id, curGame.message_id)
+                except Exception as e:
+                    logging.info(str(e))
+                gamesByChatId[curGame.chat_id] = None
+            else:
+                curGame.start()
+        else:
+            if ((not curGame is None) and (curGame.numberOfPlayers != 0)):
+                curGame.addPenaltyCard()
+        eventSet.remove(eventSet[0])
 
 def initializeFromDatabase():
     class PseudoUser:
@@ -795,25 +894,6 @@ def prevmove(message):
             curGame.printOut("It's the first move")
         else: 
             curGame.printOut(curGame.stringOfMove)
-        
-
-@bot.message_handler(commands=['cancel'])
-def cancel(message):
-    registerChat(message.chat.id)
-    registerPlayer(message.from_user)
-    curGame = gamesByChatId[message.chat.id]
-    if curGame.isCreated and isAdmin(message):
-        curGame.cancel()
-        if not curGame.isStarted:
-            try: 
-                bot.delete_message(curGame.chat_id, curGame.message_id)
-            except Exception as e:
-                logging.info(str(e))
-        gamesByChatId[message.chat.id] = None
-        try:
-            bot.send_message(message.chat.id, "Successfully canceled")
-        except Exception as e:
-            logging.info(str(e))
 
 @bot.message_handler(commands=['help'])
 def getHelp(message):
@@ -1021,21 +1101,38 @@ def getmessage(message):
             currGame.printOut("Incorrect move")
     gamesByChatId[message.chat.id] = currGame
 
-initializeFromDatabase()
-initializeLogger()
+class TimerThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+    
+    def run(self):
+        while True:
+            pollingEventSet()
 
-bot.remove_webhook()
-bot.set_webhook(url=config.WEBHOOK_URL_BASE + config.WEBHOOK_URL_PATH,
-                certificate=open(config.WEBHOOK_SSL_CERT, 'r'))
+class MainThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+    
+    def run(self):
+        initializeFromDatabase()
+        initializeLogger()
+        bot.remove_webhook()
+        bot.set_webhook(url=config.WEBHOOK_URL_BASE + config.WEBHOOK_URL_PATH,
+                        certificate=open(config.WEBHOOK_SSL_CERT, 'r'))
+        cherrypy.config.update({
+            'server.socket_host': config.WEBHOOK_LISTEN,
+            'server.socket_port': config.WEBHOOK_PORT,
+            'server.ssl_module': 'builtin',
+            'server.ssl_certificate': config.WEBHOOK_SSL_CERT,
+            'server.ssl_private_key': config.WEBHOOK_SSL_PRIV
+        })
+        cherrypy.quickstart(WebhookServer(), config.WEBHOOK_URL_PATH, {'/': {}})
 
-cherrypy.config.update({
-    'server.socket_host': config.WEBHOOK_LISTEN,
-    'server.socket_port': config.WEBHOOK_PORT,
-    'server.ssl_module': 'builtin',
-    'server.ssl_certificate': config.WEBHOOK_SSL_CERT,
-    'server.ssl_private_key': config.WEBHOOK_SSL_PRIV
-})
-
-cherrypy.quickstart(WebhookServer(), config.WEBHOOK_URL_PATH, {'/': {}})
-
+if __name__ == "__main__":
+    mainThread = MainThread()
+    mainThread.start()
+    timerThread = TimerThread()
+    timerThread.start()
+    timerThread.join()
+    mainThread.join()
 
