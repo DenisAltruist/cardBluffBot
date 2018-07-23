@@ -791,6 +791,7 @@ class Game:
 
 @bot.message_handler(commands=['cancel'])
 def cancel(message):
+    global gamesByChatId
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     curGame = gamesByChatId[message.chat.id]
