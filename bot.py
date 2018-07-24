@@ -786,7 +786,6 @@ class Game:
         else:
             for player in self.players:
                 player.leave(self)
-            self.removeCreatingFromEventSet()
 
 @bot.message_handler(commands=['cancel'])
 def cancel(message):
