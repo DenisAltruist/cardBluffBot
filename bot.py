@@ -580,16 +580,7 @@ class Game:
     def removeCreatingFromEventSet(self):
         global eventSet
         eventSet.remove([self.timeBorderToStart, self])
-        
-        #goodCopyingPython
-        for player in self.players:
-            self.alivePlayers.append(player)
-    
-        self.numberOfCardsInGame = self.numberOfPlayers * self.startAmountOfCards
-        for player in self.alivePlayers:
-            self.numberOfCards[player] = self.startAmountOfCards
-        self.startRound()
-
+            
     def firstMove(self):
         return self.isFirstMove
     
@@ -817,7 +808,6 @@ def pollingEventSet():
     if (len(eventSet) == 0):
         return
     nextTime = eventSet[0][0]
-    print(str(curTime) + " " + str(nextTime))
     if curTime == nextTime:
         curGame = eventSet[0][1]
         if not curGame.isStarted:
@@ -1113,6 +1103,7 @@ class MainThread(Thread):
         Thread.__init__(self)
     
     def run(self):
+        bot.remove_webhook()
         initializeFromDatabase()
         initializeLogger()
         bot.remove_webhook()
@@ -1126,12 +1117,10 @@ class MainThread(Thread):
             'server.ssl_private_key': config.WEBHOOK_SSL_PRIV
         })
         cherrypy.quickstart(WebhookServer(), config.WEBHOOK_URL_PATH, {'/': {}})
-
+        
 if __name__ == "__main__":
     mainThread = MainThread()
     mainThread.start()
     timerThread = TimerThread()
     timerThread.start()
-    while True:
-        print("Do nothing!")
 
