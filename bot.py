@@ -634,8 +634,7 @@ class Game:
         if self.currPlayer == len(self.alivePlayers):
             self.currPlayer = 0
         self.callToMove(self.alivePlayers[self.currPlayer])
-        self.addMoveToEventSet()
-    
+
     def kick(self, player):
         player.leave(self)
         self.alivePlayers.remove(player)
@@ -822,15 +821,12 @@ def pollingEventSet():
     if curTime == nextTime:
         curGame = eventSet[0][1]
         if not curGame.isStarted:
-            if curGame.numberOfPlayers < config.MIN_NUMBER_OF_PLAYERS:
-                curGame.cancel()
-                try: 
-                    bot.delete_message(curGame.chat_id, curGame.message_id)
-                except Exception as e:
-                    logging.info(str(e))
-                gamesByChatId[curGame.chat_id] = None
-            else:
-                curGame.start()
+            curGame.cancel()
+            try: 
+                bot.delete_message(curGame.chat_id, curGame.message_id)
+            except Exception as e:
+                logging.info(str(e))
+            gamesByChatId[curGame.chat_id] = None
         else:
             if ((not curGame is None) and (curGame.numberOfPlayers != 0)):
                 curGame.addPenaltyCard()
