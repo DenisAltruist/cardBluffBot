@@ -513,7 +513,6 @@ class Game:
         self.isFirstMove = True
         self.numberOfRounds += 1
         self.currPlayer = 0
-        self.addMoveToEventSet()
         self.callToMove(self.alivePlayers[self.currPlayer])
         self.cntOfCardsByRang.clear()
         for i in range(self.numberOfCardsInGame):
