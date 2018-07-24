@@ -739,7 +739,7 @@ class Game:
         self.__init__()
 
     def addPenaltyCard(self):
-        self.updateHand([100, 0, 0])
+        self.currHand = [100, 0, 0]
         self.finishRound()
 
 
