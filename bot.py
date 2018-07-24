@@ -508,11 +508,11 @@ class Game:
                 cardSet = self.addCardToString(cardSet, self.cardDeck[curPos], (i == 0))
                 curPos += 1
             player.sendCards(cardSet)
-
+        
+        self.addMoveToEventSet()
         self.isFirstMove = True
         self.numberOfRounds += 1
         self.currPlayer = 0
-        self.timeBorderToMove = 0
         self.addMoveToEventSet()
         self.callToMove(self.alivePlayers[self.currPlayer])
         self.cntOfCardsByRang.clear()
@@ -536,6 +536,7 @@ class Game:
                 self.printOut(self.getName(player) + ", not enough players to play")
             return
         
+        self.removeCreatingFromEventSet()
         if self.numberOfPlayers == 2:
             self.startAmountOfCards = 5
             self.finishAmountOfCards = 9
@@ -560,8 +561,6 @@ class Game:
 
     
     def addMoveToEventSet(self):
-        if self.timeBorderToMove != 0:
-            self.removeMoveFromEventSet()
         curTime = int(time.time())
         global eventSet
         self.timeBorderToMove = curTime + config.TIME_TO_MOVE
@@ -826,6 +825,7 @@ def pollingEventSet():
         curGame = eventSet[0][1]
         if not curGame.isStarted:
             if curGame.numberOfPlayers < config.MIN_NUMBER_OF_PLAYERS:
+                curGame.cancel()
                 try: 
                     bot.delete_message(curGame.chat_id, curGame.message_id)
                 except Exception as e:
@@ -837,6 +837,7 @@ def pollingEventSet():
             if ((not curGame is None) and (curGame.numberOfPlayers != 0)):
                 curGame.addPenaltyCard()
         eventSet.remove(eventSet[0])
+        eventSet = sorted(eventSet)
 
 def initializeFromDatabase():
     class PseudoUser:
@@ -1049,6 +1050,7 @@ def getmsg(message):
     if currGame.firstMove():
         currGame.printOut("You can't reveal at the first move")
     else:
+        currGame.removeMoveFromEventSet()
         currGame.finishRound()   
     gamesByChatId[message.chat.id] = currGame
 
@@ -1096,6 +1098,8 @@ def getmessage(message):
         else:                
             currGame.updateHand(currGame.parseStringToHand(currText))
             currGame.stringOfMove = currText
+        currGame.removeMoveFromEventSet()
+        currGame.addMoveToEventSet()
         currGame.logMove()
     else: 
         if currGame.isStarted:
