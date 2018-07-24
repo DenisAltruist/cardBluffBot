@@ -783,13 +783,15 @@ def cancel(message):
     registerPlayer(message.from_user)
     curGame = gamesByChatId[message.chat.id]
     if curGame.isCreated and isAdmin(message):
-        curGame.removeMoveFromEventSet()
         curGame.cancel()
         if not curGame.isStarted:
+            curGame.removeCreatingFromEventSet()
             try: 
                 bot.delete_message(curGame.chat_id, curGame.message_id)
             except Exception as e:
                 logging.info(str(e))
+        else:
+            curGame.removeMoveFromEventSet()
         gamesByChatId[message.chat.id] = None
         try:
             bot.send_message(message.chat.id, "Successfully canceled")
