@@ -574,7 +574,7 @@ class Game:
     def addCreatingToEventSet(self):
         curTime = int(time.time())
         global eventSet
-        self.timeBorderToStart = curTime + config.TIME_TO_MOVE
+        self.timeBorderToStart = curTime + config.TIME_TO_START_GAME
         eventSet.append([self.timeBorderToStart, self])
         eventSet = sorted(eventSet)
 
