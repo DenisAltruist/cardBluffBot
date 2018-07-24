@@ -783,6 +783,7 @@ def cancel(message):
     registerPlayer(message.from_user)
     curGame = gamesByChatId[message.chat.id]
     if curGame.isCreated and isAdmin(message):
+        curGame.removeMoveFromEventSet()
         curGame.cancel()
         if not curGame.isStarted:
             try: 
