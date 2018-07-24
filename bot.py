@@ -1132,4 +1132,6 @@ if __name__ == "__main__":
     mainThread.start()
     timerThread = TimerThread()
     timerThread.start()
+    while True:
+        print("Do nothing!")
 
