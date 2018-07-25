@@ -269,13 +269,15 @@ class Player:
         self.chat_id = None
         if not game.isStarted:
             return
+        if game.isCalceled:
+            return
         restNumberOfPlayers = len(game.alivePlayers)
-        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 1):
+        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 2):
             opponent = game.players[0]
             if opponent == self:
                 opponent = game.players[1]
             self.stats.addDuel(restNumberOfPlayers, opponent.stats)
-        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 1):
+        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 2):
             self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
     
   
@@ -319,7 +321,8 @@ class Game:
         self.isRegistered = False
         self.isStarted = False
         self.isCreated = False
-        self.isFirstMove = False        
+        self.isFirstMove = False     
+        self.isCalceled = False   
         self.alivePlayers = []
         self.players = []
         self.chat_id = None
@@ -769,6 +772,7 @@ class Game:
         self.isRegistered = True
 
     def cancel(self):
+        self.isCalceled = True
         if self.isStarted:
             for player in self.alivePlayers:
                 player.leave(self)
@@ -816,6 +820,7 @@ def pollingEventSet():
         if not curGame.isStarted:
             curGame.cancel()
             try: 
+                print("KEK")
                 bot.delete_message(curGame.chat_id, curGame.message_id)
             except Exception as e:
                 logging.info(str(e))
@@ -1022,6 +1027,16 @@ def startgame(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     gamesByChatId[message.chat.id].start(playerById[message.from_user.id])
+
+@bot.message_handler(commands=['t'])
+def getTime(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    currGame = gamesByChatId[message.chat.id]
+    if (not currGame.isCreated or not currGame.isStarted):
+        return
+    currTime = int(time.time())
+    currGame.printOut(str(currGame.timeBorderToMove - currTime) + " seconds remain")
 
 @bot.message_handler(commands=['r'])
 def getmsg(message):
