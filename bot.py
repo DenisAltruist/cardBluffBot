@@ -1026,7 +1026,7 @@ def startgame(message):
     registerPlayer(message.from_user)
     gamesByChatId[message.chat.id].start(playerById[message.from_user.id])
 
-@bot.message_handler(commands=['t'])
+@bot.message_handler(commands=['rt'])
 def getTime(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
@@ -1036,7 +1036,7 @@ def getTime(message):
     currTime = int(time.time())
     currGame.printOut(str(currGame.timeBorderToMove - currTime) + " seconds remain")
 
-@bot.message_handler(commands=['rt'])
+@bot.message_handler(commands=['r'])
 def getmsg(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
