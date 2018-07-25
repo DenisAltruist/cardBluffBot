@@ -50,9 +50,7 @@ class WebhookServer(object):
             json_string = cherrypy.request.body.read(length).decode("utf-8")
             update = telebot.types.Update.de_json(json_string)
             # Эта функция обеспечивает проверку входящего сообщения
-            print("CHECKING INCOMING MSG")
             bot.process_new_updates([update])
-            print("AFTER CHECK")
             return ''
         else:
             logging.info("Webhooks error")
@@ -820,8 +818,7 @@ def pollingEventSet():
         curGame = eventSet[0][1]
         if not curGame.isStarted:
             curGame.cancel()
-            try: 
-                print("KEK")
+            try:
                 bot.delete_message(curGame.chat_id, curGame.message_id)
             except Exception as e:
                 logging.info(str(e))
@@ -1039,7 +1036,7 @@ def getTime(message):
     currTime = int(time.time())
     currGame.printOut(str(currGame.timeBorderToMove - currTime) + " seconds remain")
 
-@bot.message_handler(commands=['r'])
+@bot.message_handler(commands=['rt'])
 def getmsg(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
