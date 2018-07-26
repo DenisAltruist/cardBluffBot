@@ -776,7 +776,6 @@ class Game:
             for player in self.alivePlayers:
                 player.leave(self)
         else:
-            self.removeCreatingFromEventSet()
             for player in self.players:
                 player.leave(self)
 
