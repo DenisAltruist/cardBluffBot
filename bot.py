@@ -270,12 +270,12 @@ class Player:
         if game.isCalceled:
             return
         restNumberOfPlayers = len(game.alivePlayers)
-        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 2):
+        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 3):
             opponent = game.players[0]
             if opponent == self:
                 opponent = game.players[1]
             self.stats.addDuel(restNumberOfPlayers, opponent.stats)
-        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 2):
+        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 3):
             self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
     
   
@@ -825,6 +825,7 @@ def pollingEventSet():
             gamesByChatId[curGame.chat_id] = None
         else:
             if ((not curGame is None) and (curGame.numberOfPlayers != 0)):
+                print("KEK")
                 curGame.addPenaltyCard()
         eventSet.remove(eventSet[0])
         eventSet = sorted(eventSet)
