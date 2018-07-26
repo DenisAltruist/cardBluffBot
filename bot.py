@@ -453,6 +453,7 @@ class Game:
             self.printOut(self.getName(player) + ", you haven't joined yet")
             return
         if self.isStarted:
+            self.removeMoveFromEventSet()
             self.finishRound(player)
         else:
             self.numberOfCards.pop(player)
@@ -772,9 +773,11 @@ class Game:
     def cancel(self):
         self.isCalceled = True
         if self.isStarted:
+            self.removeMoveFromEventSet()
             for player in self.alivePlayers:
                 player.leave(self)
         else:
+            self.removeCreatingFromEventSet()
             for player in self.players:
                 player.leave(self)
 
@@ -825,7 +828,6 @@ def pollingEventSet():
             gamesByChatId[curGame.chat_id] = None
         else:
             if ((not curGame is None) and (curGame.numberOfPlayers != 0)):
-                print("KEK")
                 curGame.addPenaltyCard()
         eventSet.remove(eventSet[0])
         eventSet = sorted(eventSet)
