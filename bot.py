@@ -773,7 +773,6 @@ class Game:
     def cancel(self):
         self.isCalceled = True
         if self.isStarted:
-            self.removeMoveFromEventSet()
             for player in self.alivePlayers:
                 player.leave(self)
         else:
