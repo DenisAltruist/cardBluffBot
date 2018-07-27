@@ -1051,8 +1051,8 @@ def findDuel(message):
         bot.send_message(message.chat.id, "Statring opponent searching...")
     except Exception as e:
         logging.info(str(e))
-    strDelta = message.text[9:]
-    if len(message.text) == 8:
+    strDelta = message.text[10:]
+    if len(message.text) == 9:
         delta = 10000
     else:
         delta = 0
