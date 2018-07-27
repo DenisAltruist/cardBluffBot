@@ -38,6 +38,7 @@ neutral = u'\U0001F610'
 typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "j": 9, "q": 10, "k": 11, "a": 12}
 playerById = dict()
 eventSet = []
+duelSearchQueue = []
 
 
 class WebhookServer(object):
@@ -249,6 +250,7 @@ class Player:
             user.last_name = ""
 
         self.id = user.id
+        self.deltaForSearchDuel = 0
         self.fullname = user.first_name
         if (self.fullname == ""):
             self.fullname = user.last_name
@@ -779,6 +781,29 @@ class Game:
             for player in self.players:
                 player.leave(self)
 
+class DuelRateGame(Game):
+    def __init__(self, message, firstPlayer, secondPlayer):
+        self.addPlayer(message, firstPlayer)
+        self.addPlayer(message, secondPlayer)
+    
+    def printOut(self, message, player = None):
+        if (player is None):
+            try:
+                bot.send_message(player.chat_id, message, parse_mode = 'HTML')
+            except Exception as e:
+                logging.info("(printOut)Chat id: " + str(self.chat_id) + "\n" + "Response: " + str(e))
+            return
+
+        message = self.getLinkedName(player) + ":\n" + message
+        for player in self.players:
+            if self.players[self.currPlayer] == player:
+                continue
+            try:
+                bot.send_message(player.chat_id, message, parse_mode = 'HTML')
+            except Exception as e:
+                logging.info("(printOut)Chat id: " + str(self.chat_id) + "\n" + "Response: " + str(e))
+
+
 @bot.message_handler(commands=['cancel'])
 def cancel(message):
     global gamesByChatId
@@ -862,7 +887,7 @@ def registerChat(id):
 
 def isAdmin(message):
     status = bot.get_chat_member(message.chat.id, message.from_user.id).status
-    return (status == 'creator') or (status == 'administrator') or (message.chat.id == message.from_user.id)
+    return (status == 'creator') or (status == 'administrator')
 
 
 @bot.message_handler(commands=['start'])
@@ -1001,6 +1026,61 @@ def creategame(message):
     callback_button = types.InlineKeyboardButton(text = "Join", callback_data = "Join")
     keyboard.add(callback_button)
     gamesByChatId[message.chat.id].createGame(message, keyboard)
+
+
+def GetOpponentForDuel(player):
+    global duelSearchQueue
+    shuffle(duelSearchQueue)
+    for i in range(len(duelSearchQueue)):
+        opponent = duelSearchQueue[i]
+        currDelta = abs(opponent.getDuelRating() - player.getDuelRating())
+        if currDelta <= player.deltaForSearchDuel and currDelta <= opponent.deltaForSearchDuel:
+            duelSearchQueue.remove(opponent)
+            return opponent
+    duelSearchQueue.append(player)
+    return None
+
+@bot.message_handler(commands=['findDuel'])
+def findDuel(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    player = playerById[message.from_user.id]
+    if (message.chat.id != message.from_user.id) or (player in duelSearchQueue):
+        return
+    try:
+        bot.send_message(message.chat.id, "Statring opponent searching...")
+    except Exception as e:
+        logging.info(str(e))
+    strDelta = message.text[9:]
+    if len(message.text) == 8:
+        delta = 10000
+    else:
+        delta = 0
+        try:
+            delta = int(strDelta)
+        except ValueError:
+            return
+        if delta < 0:
+            delta = abs(delta)
+    player.deltaForSearchDuel = delta
+    opponent = GetOpponentForDuel(player)
+    if opponent is None:
+        return
+    global gamesByChatId
+    gamesByChatId[message.chat.id] = DuelRateGame(message, player, opponent)
+
+@bot.message_handler(commands=['abort'])
+def abort(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    player = playerById[message.from_user.id]
+    if (message.chat.id != message.from_user.id) or (not player in duelSearchQueue):
+        return
+    try:
+        bot.send_message(message.chat.id, "Aborted successfully")
+    except Exception as e:
+        logging.info(str(e))
+    duelSearchQueue.remove(player)
    
 @bot.callback_query_handler(func=lambda c: True)
 def inline(c):
@@ -1027,7 +1107,7 @@ def startgame(message):
     registerPlayer(message.from_user)
     gamesByChatId[message.chat.id].start(playerById[message.from_user.id])
 
-@bot.message_handler(commands=['rt'])
+@bot.message_handler(commands=['tr'])
 def getTime(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
