@@ -427,7 +427,7 @@ class Game:
             res = res + "\n" 
         self.printOut("Number of cards:\n" + res)
 
-    def printOut(self, message):
+    def printOut(self, message, player = None):
         try: 
             bot.send_message(self.chat_id, message, parse_mode = 'HTML')
         except Exception as e:
@@ -577,7 +577,8 @@ class Game:
     
     def removeMoveFromEventSet(self):
         global eventSet
-        eventSet.remove([self.timeBorderToMove, self])
+        if ([self.timeBorderToMove, self] in eventSet):
+            eventSet.remove([self.timeBorderToMove, self])
 
     def addCreatingToEventSet(self):
         curTime = int(time.time())
@@ -588,7 +589,8 @@ class Game:
 
     def removeCreatingFromEventSet(self):
         global eventSet
-        eventSet.remove([self.timeBorderToStart, self])
+        if ([self.timeBorderToStart, self] in eventSet):
+            eventSet.remove([self.timeBorderToStart, self])
             
     def firstMove(self):
         return self.isFirstMove
@@ -791,6 +793,17 @@ class DuelRateGame(Game):
         Game.__init__(self)
         self.addPlayer(message, firstPlayer)
         self.addPlayer(message, secondPlayer)
+        pref = "Your opponent is "
+        try:
+            bot.send_message(self.players[0].chat_id, pref + self.getLinkedName(self.players[1]), parse_mode = 'HTML')
+        except Exception as e:
+            logging.info(str(e))
+        
+        try:
+            bot.send_message(self.players[1].chat_id, pref + self.getLinkedName(self.players[0]), parse_mode = 'HTML')
+        except Exception as e:
+            logging.info(str(e))
+        self.start()
     
     def printOut(self, message, player = None):
         if (player is None):
@@ -1074,7 +1087,8 @@ def findDuel(message):
     if opponent is None:
         return
     global gamesByChatId
-    gamesByChatId[message.chat.id] = DuelRateGame(message, player, opponent)
+    gamesByChatId[player.chat_id] = DuelRateGame(message, player, opponent)
+    gamesByChatId[opponent.chat_id] = gamesByChatId[player.chat_id]
 
 @bot.message_handler(commands=['abort'])
 def abort(message):
@@ -1193,6 +1207,15 @@ def getmessage(message):
         if currGame.isStarted:
             currGame.printOut("Incorrect move")
     gamesByChatId[message.chat.id] = currGame
+
+@bot.message_handler(content_type=['text'])
+def getMessage(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    if message.chat.id != message.from_user.id:
+        return
+    currGame = gamesByChatId[message.chat.id]
+    currGame.printOut(message.text, playerById[message.from_user.id])
 
 class TimerThread(Thread):
     def __init__(self):
