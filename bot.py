@@ -1083,12 +1083,10 @@ def findDuel(message):
     opponent = GetOpponentForDuel(player)
     if opponent is None:
         return
-    print(str(player.id) + " " + str(opponent.id))
     gamesByChatId[player.id] = DuelRateGame(message, player, opponent)
     gamesByChatId[opponent.id] = gamesByChatId[player.id]
     gamesByChatId[player.id].start()
-    print(gamesByChatId[player.id].isStarted)
-    print(gamesByChatId[opponent.id].isStarted) 
+    gamesByChatId[player.id].isRegistered = True
 
 @bot.message_handler(commands=['abort'])
 def abort(message):
