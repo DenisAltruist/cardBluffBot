@@ -405,7 +405,6 @@ class Game:
         if self.isStarted:
             self.printOut(self.getName(player) + ", you can't join to the started game")
             return
-        self.message_id = message.message_id #???
         self.chat_id = message.chat.id #???
         self.players.append(player)
         self.numberOfPlayers += 1
@@ -563,7 +562,7 @@ class Game:
         #goodCopyingPython
         for player in self.players:
             self.alivePlayers.append(player)
-            player.isPlaying = False
+            player.isPlaying = True
     
         self.numberOfCardsInGame = self.numberOfPlayers * self.startAmountOfCards
         for player in self.alivePlayers:
@@ -1205,7 +1204,7 @@ def getmessage(message):
             currGame.printOut("Incorrect move")
     gamesByChatId[message.chat.id] = currGame
 
-@bot.message_handler(content_type=['text'])
+@bot.message_handler(content_types=['text'])
 def getText(message):
     print("TEXT")
     registerChat(message.chat.id)
