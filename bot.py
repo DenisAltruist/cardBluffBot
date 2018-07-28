@@ -1057,6 +1057,8 @@ def GetOpponentForDuel(player):
 
 @bot.message_handler(commands=['findDuel'])
 def findDuel(message):
+    global gamesByChatId
+    global playerById
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     player = playerById[message.from_user.id]
@@ -1081,7 +1083,6 @@ def findDuel(message):
     opponent = GetOpponentForDuel(player)
     if opponent is None:
         return
-    global gamesByChatId
     print(str(player.id) + " " + str(opponent.id))
     gamesByChatId[player.id] = DuelRateGame(message, player, opponent)
     gamesByChatId[opponent.id] = gamesByChatId[player.id]
@@ -1211,11 +1212,11 @@ def getmessage(message):
 
 @bot.message_handler(content_types=['text'])
 def getText(message):
-    print("TEXT")
+    global gamesByChatId
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     currGame = gamesByChatId[message.chat.id]
-    if ((message.chat.id != message.from_user.id) or (currGame is None)):
+    if ((message.chat.id != message.from_user.id) or (not currGame.isCreated) or (not currGame.isStarted)):
         return
     currGame.printOut(message.text, playerById[message.chat.id])
 
