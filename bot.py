@@ -1087,6 +1087,8 @@ def findDuel(message):
     gamesByChatId[player.id] = DuelRateGame(message, player, opponent)
     gamesByChatId[opponent.id] = gamesByChatId[player.id]
     gamesByChatId[player.id].start()
+    print(gamesByChatId[player.id].isStarted)
+    print(gamesByChatId[opponent.id].isStarted) 
 
 @bot.message_handler(commands=['abort'])
 def abort(message):
