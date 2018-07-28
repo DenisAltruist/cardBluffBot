@@ -740,6 +740,7 @@ class Game:
     def finish(self):
         self.alivePlayers[0].leave(self)
         self.printOut('The winner is ' + self.getLinkedName(self.alivePlayers[0]))
+        self.isRegistered = False
         if self.numberOfPlayers == 2:
             time.sleep(1)
             winner = self.alivePlayers[0]
@@ -750,7 +751,6 @@ class Game:
             ratingMsg += getDuelScoreFormat(1, winner) + " " + winner.getDeltaDuelRating() + "\n"
             ratingMsg += getDuelScoreFormat(2, looser) + " " + looser.getDeltaDuelRating() + "\n"
             self.printOut(ratingMsg)
-
         self.__init__()
 
     def addPenaltyCard(self):
