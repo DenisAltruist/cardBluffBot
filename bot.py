@@ -792,22 +792,17 @@ class DuelRateGame(Game):
     def __init__(self, message, firstPlayer, secondPlayer):
         Game.__init__(self)
         self.addPlayer(message, firstPlayer)
-        print(self.numberOfPlayers)
         self.addPlayer(message, secondPlayer)
-        print(self.numberOfPlayers)
         pref = "Your opponent is "
-        print(self.numberOfPlayers)
-        print(len(self.players))
         try:
             bot.send_message(self.players[0].chat_id, pref + self.getLinkedName(self.players[1]), parse_mode = 'HTML')
         except Exception as e:
-            print("KEK1")
             logging.info(str(e))
         
         try:
             bot.send_message(self.players[1].chat_id, pref + self.getLinkedName(self.players[0]), parse_mode = 'HTML')
         except Exception as e:
-            print("KEK2")
+
             logging.info(str(e))
         self.start()
     
@@ -1067,7 +1062,7 @@ def GetOpponentForDuel(player):
 
 @bot.message_handler(commands=['findDuel'])
 def findDuel(message):
-    
+    return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     player = playerById[message.from_user.id]
@@ -1214,15 +1209,6 @@ def getmessage(message):
         if currGame.isStarted:
             currGame.printOut("Incorrect move")
     gamesByChatId[message.chat.id] = currGame
-
-@bot.message_handler(content_type=['text'])
-def getMessage(message):
-    registerChat(message.chat.id)
-    registerPlayer(message.from_user)
-    if message.chat.id != message.from_user.id:
-        return
-    currGame = gamesByChatId[message.chat.id]
-    currGame.printOut(message.text, playerById[message.from_user.id])
 
 class TimerThread(Thread):
     def __init__(self):
