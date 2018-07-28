@@ -791,6 +791,7 @@ class Game:
 class DuelRateGame(Game):
     def __init__(self, message, firstPlayer, secondPlayer):
         Game.__init__(self)
+        self.isCreated = True
         self.addPlayer(message, firstPlayer)
         self.addPlayer(message, secondPlayer)
         pref = "Your opponent is "
@@ -1062,11 +1063,9 @@ def GetOpponentForDuel(player):
 
 @bot.message_handler(commands=['findDuel'])
 def findDuel(message):
-    return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     player = playerById[message.from_user.id]
-    d = DuelRateGame(message, player, player)
     if (message.chat.id != message.from_user.id) or (player in duelSearchQueue):
         return
     try:
