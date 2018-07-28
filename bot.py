@@ -1051,8 +1051,6 @@ def findDuel(message):
     
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    d = DuelRateGame(message, playerById[message.from_user.id], playerById[message.from_user.id])
-    return
     player = playerById[message.from_user.id]
     if (message.chat.id != message.from_user.id) or (player in duelSearchQueue):
         return
