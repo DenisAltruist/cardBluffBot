@@ -290,6 +290,12 @@ class Player:
             res = '-'
         return res
     
+    def getDuelRatingValue(self):
+        res = self.stats.data[7]
+        if self.stats.data[3] == '0':
+            return 0
+        return int(self.stats.data[7])
+    
     #in the moment after end of duel (troubles in other situations beacause previousRate is undef)
     def getDeltaDuelRating(self):
         currRate = int(self.stats.data[7])
@@ -1033,7 +1039,7 @@ def GetOpponentForDuel(player):
     shuffle(duelSearchQueue)
     for i in range(len(duelSearchQueue)):
         opponent = duelSearchQueue[i]
-        currDelta = abs(opponent.getDuelRating() - player.getDuelRating())
+        currDelta = abs(opponent.getDuelRatingValue() - player.getDuelRatingValue())
         if currDelta <= player.deltaForSearchDuel and currDelta <= opponent.deltaForSearchDuel:
             duelSearchQueue.remove(opponent)
             return opponent
