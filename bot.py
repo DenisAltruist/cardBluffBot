@@ -329,7 +329,8 @@ class Game:
         self.isStarted = False
         self.isCreated = False
         self.isFirstMove = False     
-        self.isCalceled = False   
+        self.isCalceled = False
+        self.isDuelRateGame = False
         self.alivePlayers = []
         self.players = []
         self.chat_id = None
@@ -795,6 +796,7 @@ class DuelRateGame(Game):
     def __init__(self, message, firstPlayer, secondPlayer):
         Game.__init__(self)
         self.isCreated = True
+        self.isDuelRateGame = True
         self.addPlayer(message, firstPlayer)
         self.addPlayer(message, secondPlayer)
         pref = "Your opponent is "
@@ -1163,7 +1165,6 @@ def getTop(message):
 
 @bot.message_handler(commands=['r'])
 def getmsg(message):
-    print("REVEAL")
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     global gamesByChatId
@@ -1171,6 +1172,8 @@ def getmsg(message):
     currPlayer = playerById[message.from_user.id]
     if (not currGame.isCreated or not currGame.isStarted):
         return
+    if currGame.isDuelRateGame:
+        currGame.printOut(message.text, currPlayer)
     if (currPlayer != currGame.alivePlayers[currGame.currPlayer]):
         return
     if currGame.firstMove():
@@ -1182,24 +1185,23 @@ def getmsg(message):
 
 @bot.message_handler(commands=['m'])
 def getmessage(message):
-    print("MOVE")
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     global gamesByChatId
     currGame = gamesByChatId[message.chat.id]
     currText = message.text[3:]
     currPlayer = playerById[message.from_user.id]
-    print(str(message.chat.id) + " " + str(message.from_user.id))
     if (not currGame.isStarted):
-        print("RETURN")
-        return 
+        return
+    if currGame.isDuelRateGame:
+        currGame.printOut(message.text, currPlayer)  
     if (currPlayer != currGame.alivePlayers[currGame.currPlayer]):
-        print("CURR PLAYER")
         return
     if currGame.isCorrectMove(currText) and currGame.started():
         if not currGame.isHigherHand(currGame.parseStringToHand(currText)):
             currGame.printOut("It's a not higher than current")
-        else:                
+        else:             
+             
             currGame.updateHand(currGame.parseStringToHand(currText))
             currGame.stringOfMove = currText
         currGame.removeMoveFromEventSet()
