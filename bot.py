@@ -532,6 +532,7 @@ class Game:
                 self.cntOfCardsByRang[self.cardDeck[i] % 13] += 1 
 
     def start(self, player = None):
+        print("START")
         if self.isCreated == False:
             if (not player is None):
                 self.printOut(self.getName(player) +  ", the game hasn't created yet")
@@ -544,7 +545,7 @@ class Game:
             if (not player is None):
                 self.printOut(self.getName(player) + ", not enough players to play")
             return
-        
+        print("STARTED")
         self.removeCreatingFromEventSet()
         if self.numberOfPlayers == 2:
             self.startAmountOfCards = 5
@@ -1083,6 +1084,7 @@ def findDuel(message):
     if opponent is None:
         return
     global gamesByChatId
+    print(str(player.id) + " " + str(opponent.id))
     gamesByChatId[player.id] = DuelRateGame(message, player, opponent)
     gamesByChatId[opponent.id] = gamesByChatId[player.id]
 
@@ -1187,6 +1189,7 @@ def getmessage(message):
     currGame = gamesByChatId[message.chat.id]
     currText = message.text[3:]
     currPlayer = playerById[message.from_user.id]
+    print(str(message.chat.id) + " " + str(message.from_user.id))
     if (not currGame.isStarted):
         print("RETURN")
         return 
