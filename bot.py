@@ -796,12 +796,12 @@ class DuelRateGame(Game):
         self.addPlayer(message, secondPlayer)
         pref = "Your opponent is "
         try:
-            bot.send_message(self.players[0].chat_id, pref + self.getLinkedName(self.players[1]), parse_mode = 'HTML')
+            bot.send_message(self.players[0].id, pref + self.getLinkedName(self.players[1]), parse_mode = 'HTML')
         except Exception as e:
             logging.info(str(e))
         
         try:
-            bot.send_message(self.players[1].chat_id, pref + self.getLinkedName(self.players[0]), parse_mode = 'HTML')
+            bot.send_message(self.players[1].id, pref + self.getLinkedName(self.players[0]), parse_mode = 'HTML')
         except Exception as e:
 
             logging.info(str(e))
@@ -810,7 +810,7 @@ class DuelRateGame(Game):
     def printOut(self, message, player = None):
         if (player is None):
             try:
-                bot.send_message(player.chat_id, message, parse_mode = 'HTML')
+                bot.send_message(player.id, message, parse_mode = 'HTML')
             except Exception as e:
                 logging.info("(printOut)Chat id: " + str(self.chat_id) + "\n" + "Response: " + str(e))
             return
@@ -1208,6 +1208,15 @@ def getmessage(message):
         if currGame.isStarted:
             currGame.printOut("Incorrect move")
     gamesByChatId[message.chat.id] = currGame
+
+@bot.message_handler(content_type=['text'])
+def getText(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    currGame = gamesByChatId[message.chat.id]
+    if ((message.chat.id != message.from_user.id) or (currGame is None)):
+        return
+    currGame.printOut(message.text, playerById[message.chat.id])
 
 class TimerThread(Thread):
     def __init__(self):
