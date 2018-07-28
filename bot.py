@@ -794,14 +794,17 @@ class DuelRateGame(Game):
         self.addPlayer(message, firstPlayer)
         self.addPlayer(message, secondPlayer)
         pref = "Your opponent is "
+        print(self.numberOfPlayers)
         try:
             bot.send_message(self.players[0].chat_id, pref + self.getLinkedName(self.players[1]), parse_mode = 'HTML')
         except Exception as e:
+            print("KEK1")
             logging.info(str(e))
         
         try:
             bot.send_message(self.players[1].chat_id, pref + self.getLinkedName(self.players[0]), parse_mode = 'HTML')
         except Exception as e:
+            print("KEK2")
             logging.info(str(e))
         self.start()
     
@@ -1065,6 +1068,7 @@ def findDuel(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     player = playerById[message.from_user.id]
+    d = DuelRateGame(message, player, player)
     if (message.chat.id != message.from_user.id) or (player in duelSearchQueue):
         return
     try:
