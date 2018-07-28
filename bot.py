@@ -1134,25 +1134,6 @@ def getTime(message):
     currTime = int(time.time())
     currGame.printOut(str(currGame.timeBorderToMove - currTime) + " seconds remain")
 
-@bot.message_handler(commands=['r'])
-def getmsg(message):
-    registerChat(message.chat.id)
-    registerPlayer(message.from_user)
-    global gamesByChatId
-    currGame = gamesByChatId[message.chat.id]
-    currPlayer = playerById[message.from_user.id]
-    if (not currGame.isCreated or not currGame.isStarted):
-        return
-    if (currPlayer != currGame.alivePlayers[currGame.currPlayer]):
-        return
-    if currGame.firstMove():
-        currGame.printOut("You can't reveal at the first move")
-    else:
-        currGame.removeMoveFromEventSet()
-        currGame.finishRound()   
-    gamesByChatId[message.chat.id] = currGame
-
-
 @bot.message_handler(commands=['top'])
 def getTop(message):
     registerChat(message.chat.id)
@@ -1178,8 +1159,28 @@ def getTop(message):
     except Exception as e:
         logging.info(str(e)) 
 
+@bot.message_handler(commands=['r'])
+def getmsg(message):
+    print("REVEAL")
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    global gamesByChatId
+    currGame = gamesByChatId[message.chat.id]
+    currPlayer = playerById[message.from_user.id]
+    if (not currGame.isCreated or not currGame.isStarted):
+        return
+    if (currPlayer != currGame.alivePlayers[currGame.currPlayer]):
+        return
+    if currGame.firstMove():
+        currGame.printOut("You can't reveal at the first move")
+    else:
+        currGame.removeMoveFromEventSet()
+        currGame.finishRound()   
+    gamesByChatId[message.chat.id] = currGame
+
 @bot.message_handler(commands=['m'])
 def getmessage(message):
+    print("MOVE")
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     global gamesByChatId
@@ -1187,8 +1188,10 @@ def getmessage(message):
     currText = message.text[3:]
     currPlayer = playerById[message.from_user.id]
     if (not currGame.isStarted):
+        print("RETURN")
         return 
     if (currPlayer != currGame.alivePlayers[currGame.currPlayer]):
+        print("CURR PLAYER")
         return
     if currGame.isCorrectMove(currText) and currGame.started():
         if not currGame.isHigherHand(currGame.parseStringToHand(currText)):
