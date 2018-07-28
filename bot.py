@@ -806,9 +806,7 @@ class DuelRateGame(Game):
         try:
             bot.send_message(self.players[1].id, pref + self.getLinkedName(self.players[0]), parse_mode = 'HTML')
         except Exception as e:
-
             logging.info(str(e))
-        self.start()
     
     def printOut(self, message, player = None):
         if not(player is None):
@@ -1087,6 +1085,7 @@ def findDuel(message):
     print(str(player.id) + " " + str(opponent.id))
     gamesByChatId[player.id] = DuelRateGame(message, player, opponent)
     gamesByChatId[opponent.id] = gamesByChatId[player.id]
+    gamesByChatId[player.id].start()
 
 @bot.message_handler(commands=['abort'])
 def abort(message):
