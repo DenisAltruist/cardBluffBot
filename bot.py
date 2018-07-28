@@ -291,7 +291,6 @@ class Player:
         return res
     
     def getDuelRatingValue(self):
-        res = self.stats.data[7]
         if self.stats.data[3] == '0':
             return 0
         return int(self.stats.data[7])
@@ -789,6 +788,7 @@ class Game:
 
 class DuelRateGame(Game):
     def __init__(self, message, firstPlayer, secondPlayer):
+        Game.__init__()
         self.addPlayer(message, firstPlayer)
         self.addPlayer(message, secondPlayer)
     
@@ -1048,8 +1048,11 @@ def GetOpponentForDuel(player):
 
 @bot.message_handler(commands=['findDuel'])
 def findDuel(message):
+    
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
+    d = DuelRateGame(message, playerById[message.from_user.id], playerById[message.from_user.id])
+    return
     player = playerById[message.from_user.id]
     if (message.chat.id != message.from_user.id) or (player in duelSearchQueue):
         return
