@@ -792,9 +792,12 @@ class DuelRateGame(Game):
     def __init__(self, message, firstPlayer, secondPlayer):
         Game.__init__(self)
         self.addPlayer(message, firstPlayer)
+        print(self.numberOfPlayers)
         self.addPlayer(message, secondPlayer)
+        print(self.numberOfPlayers)
         pref = "Your opponent is "
         print(self.numberOfPlayers)
+        print(len(self.players))
         try:
             bot.send_message(self.players[0].chat_id, pref + self.getLinkedName(self.players[1]), parse_mode = 'HTML')
         except Exception as e:
