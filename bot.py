@@ -252,6 +252,7 @@ class Player:
         self.id = user.id
         self.deltaForSearchDuel = 0
         self.fullname = user.first_name
+        self.isPlaying = False
         if (self.fullname == ""):
             self.fullname = user.last_name
         elif user.last_name != "":
@@ -267,6 +268,7 @@ class Player:
     
     def leave(self, game):
         self.chat_id = None
+        self.isPlaying = False
         if not game.isStarted:
             return
         if game.isCalceled:
@@ -561,6 +563,7 @@ class Game:
         #goodCopyingPython
         for player in self.players:
             self.alivePlayers.append(player)
+            player.isPlaying = False
     
         self.numberOfCardsInGame = self.numberOfPlayers * self.startAmountOfCards
         for player in self.alivePlayers:
@@ -808,7 +811,7 @@ class DuelRateGame(Game):
         self.start()
     
     def printOut(self, message, player = None):
-        if player is None:
+        if not(player is None):
             message = self.getLinkedName(player) + ":\n" + message
         for player_ in self.players:
             if player_ == player:
@@ -854,7 +857,6 @@ def pollingEventSet():
     if (len(eventSet) == 0):
         return
     nextTime = eventSet[0][0]
-    print(str(curTime) + " " + str(nextTime))
     if curTime == nextTime:
         curGame = eventSet[0][1]
         if not curGame.isStarted:
@@ -1060,10 +1062,10 @@ def findDuel(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     player = playerById[message.from_user.id]
-    if (message.chat.id != message.from_user.id) or (player in duelSearchQueue):
+    if (message.chat.id != message.from_user.id) or (player in duelSearchQueue) or (player.isPlaying):
         return
     try:
-        bot.send_message(message.chat.id, "Statring opponent searching...\n" + "Write /abort to cancel")
+        bot.send_message(message.chat.id, "Starting opponent searching...\n" + "Write /abort to cancel")
     except Exception as e:
         logging.info(str(e))
     strDelta = message.text[10:]
@@ -1205,6 +1207,7 @@ def getmessage(message):
 
 @bot.message_handler(content_type=['text'])
 def getText(message):
+    print("TEXT")
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     currGame = gamesByChatId[message.chat.id]
