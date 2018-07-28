@@ -808,21 +808,15 @@ class DuelRateGame(Game):
         self.start()
     
     def printOut(self, message, player = None):
-        if (player is None):
-            try:
-                bot.send_message(player.id, message, parse_mode = 'HTML')
-            except Exception as e:
-                logging.info("(printOut)Chat id: " + str(self.chat_id) + "\n" + "Response: " + str(e))
-            return
-
-        message = self.getLinkedName(player) + ":\n" + message
-        for player in self.players:
-            if self.players[self.currPlayer] == player:
+        if player is None:
+            message = self.getLinkedName(player) + ":\n" + message
+        for player_ in self.players:
+            if player_ == player:
                 continue
             try:
-                bot.send_message(player.chat_id, message, parse_mode = 'HTML')
+                bot.send_message(player_.id, message, parse_mode = 'HTML')
             except Exception as e:
-                logging.info("(printOut)Chat id: " + str(self.chat_id) + "\n" + "Response: " + str(e))
+                logging.info("(printOut)Chat id: " + str(player_.id) + "\n" + "Response: " + str(e))
 
 
 @bot.message_handler(commands=['cancel'])
@@ -1088,8 +1082,8 @@ def findDuel(message):
     if opponent is None:
         return
     global gamesByChatId
-    gamesByChatId[player.chat_id] = DuelRateGame(message, player, opponent)
-    gamesByChatId[opponent.chat_id] = gamesByChatId[player.chat_id]
+    gamesByChatId[player.id] = DuelRateGame(message, player, opponent)
+    gamesByChatId[opponent.id] = gamesByChatId[player.id]
 
 @bot.message_handler(commands=['abort'])
 def abort(message):
