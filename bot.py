@@ -788,7 +788,7 @@ class Game:
 
 class DuelRateGame(Game):
     def __init__(self, message, firstPlayer, secondPlayer):
-        Game.__init__()
+        Game.__init__(self)
         self.addPlayer(message, firstPlayer)
         self.addPlayer(message, secondPlayer)
     
