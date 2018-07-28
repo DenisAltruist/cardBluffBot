@@ -1048,7 +1048,7 @@ def findDuel(message):
     if (message.chat.id != message.from_user.id) or (player in duelSearchQueue):
         return
     try:
-        bot.send_message(message.chat.id, "Statring opponent searching...\n" + "Write \\abort to cancel")
+        bot.send_message(message.chat.id, "Statring opponent searching...\n" + "Write /abort to cancel")
     except Exception as e:
         logging.info(str(e))
     strDelta = message.text[10:]
