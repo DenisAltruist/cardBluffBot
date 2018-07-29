@@ -174,8 +174,6 @@ class Stats():
         self.change(7, delta) 
 
 
-        
-
     def addParty(self, place, numberOfPlayers):
         if place == 1:
             self.change(2, 1)
@@ -274,12 +272,12 @@ class Player:
         if game.isCalceled:
             return
         restNumberOfPlayers = len(game.alivePlayers)
-        if (game.numberOfPlayers == 2 and game.numberOfRounds >= 3):
+        if (game.numberOfPlayers == 2 and game.numberOfRounds >= self.MIN_NUMBER_OF_ROUNDS):
             opponent = game.players[0]
             if opponent == self:
                 opponent = game.players[1]
             self.stats.addDuel(restNumberOfPlayers, opponent.stats)
-        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= 3):
+        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= self.MIN_NUMBER_OF_ROUNDS):
             self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
     
   
@@ -298,7 +296,9 @@ class Player:
         return int(self.stats.data[7])
     
     #in the moment after end of duel (troubles in other situations beacause previousRate is undef)
-    def getDeltaDuelRating(self):
+    def getDeltaDuelRating(self, numberOfStartedRounds):
+        if numberOfStartedRounds < config.MIN_NUMBER_OF_ROUNDS:
+            return "0"
         currRate = int(self.stats.data[7])
         prevRate = int(self.stats.previousRate)
         delta = currRate - prevRate
@@ -321,6 +321,9 @@ class Player:
     
 class Game:
     def __init__(self):
+        self.initialize()
+
+    def initialize(self): 
         self.playlist = ''
         self.numberOfPlayers = 0 #with loosers
         self.numberOfCardsInGame = 0
@@ -347,7 +350,8 @@ class Game:
         self.stringOfMove = ""
         self.timeBorderToMove = 0
         self.timeBorderToStart = 0
-        
+
+
     def isHigherHand(self, nextHand):
         if nextHand[0] < self.currHand[0]:
             return False
@@ -519,10 +523,9 @@ class Game:
                 cardSet = self.addCardToString(cardSet, self.cardDeck[curPos], (i == 0))
                 curPos += 1
             player.sendCards(cardSet)
-        
+        self.numberOfRounds += 1
         self.addMoveToEventSet()
         self.isFirstMove = True
-        self.numberOfRounds += 1
         self.currPlayer = 0
         self.callToMove(self.alivePlayers[self.currPlayer])
         self.cntOfCardsByRang.clear()
@@ -533,7 +536,6 @@ class Game:
                 self.cntOfCardsByRang[self.cardDeck[i] % 13] += 1 
 
     def start(self, player = None):
-        print("START")
         if self.isCreated == False:
             if (not player is None):
                 self.printOut(self.getName(player) +  ", the game hasn't created yet")
@@ -546,7 +548,6 @@ class Game:
             if (not player is None):
                 self.printOut(self.getName(player) + ", not enough players to play")
             return
-        print("STARTED")
         self.removeCreatingFromEventSet()
         if self.numberOfPlayers == 2:
             self.startAmountOfCards = 5
@@ -748,10 +749,10 @@ class Game:
             if looser == winner:
                 looser = self.players[1]
             ratingMsg = "Duel rating changes:\n"
-            ratingMsg += getDuelScoreFormat(1, winner) + " " + winner.getDeltaDuelRating() + "\n"
-            ratingMsg += getDuelScoreFormat(2, looser) + " " + looser.getDeltaDuelRating() + "\n"
+            ratingMsg += getDuelScoreFormat(1, winner) + " " + winner.getDeltaDuelRating(self.numberOfRounds) + "\n"
+            ratingMsg += getDuelScoreFormat(2, looser) + " " + looser.getDeltaDuelRating(self.numberOfRounds) + "\n"
             self.printOut(ratingMsg)
-        self.__init__()
+        self.initialize()
 
     def addPenaltyCard(self):
         self.currHand = [100, 0, 0]
@@ -958,11 +959,12 @@ def getHelpRu(message):
     rules += "1) Для начала отправьте боту в личные сообщение /start, чтобы он мог присылать вам ваши карты. \n\n"
     rules += "2) Есть два основных режима игры - 'Duel' и 'Party'. Начнём с 'Party':\n\n"
     rules += "а) В начале игры каждый участник получает по одной карте, которая известна только ему. Дальше будут разыгрываться раунды, по результатам которых будет определяться игрок, который получит дополнительную карту в новом раунде (игрок, который проиграл раунд). Игрок, который получил 6 карт, выбывает из игры. Кто остаётся последним — тот победил.\n\n"
-    rules += "Как проходит раунд: каждый раунд выбирается случайный порядок игроков, в соответствии с которым они будут ходить. Ход заключается в том, что игрок называет любую покерную комбинацию (посмотреть нумерацию комбинаций можно с помощью /hands, а мастей — /suits), которая выше, чем предыдущая (если он ходит первым — то любую), либо он может сказать 'не верю' (/r) и вскрыть предыдущую комбинацию.\n\n" 
+    rules += "Как проходит раунд: каждый раунд выбирается случайный порядок игроков, в соответствии с которым они будут ходить. Ход заключается в том, что игрок называет любую покерную комбинацию (посмотреть нумерацию комбинаций можно с помощью /hands_ru, а мастей — /suits), которая выше, чем предыдущая (если он ходит первым — то любую), либо он может сказать 'не верю' (/r) и вскрыть предыдущую комбинацию.\n\n" 
     rules += "Рано или поздно кто-то вскроет текущую комбинацию, так как они повышаются. При вскрытии каждый игрок раскрывает свои карты, и последняя названная комбинации ищется среди всех карт, которые были на руках у игроков в этом раунде. Если она присутствует, то игроку, который сказал 'не верю' будет дана дополнительная карта в новом раунде, а иначе дополнительная карта будет дана игроку, заявившему комбинацию. После вскрытия, колода карт перетасовывается, и каждому игроку раздают столько карт, сколько раундов он проиграл + одна изначальная.\n\n"
-    rules += "б) Режим 'Duel' отличается только тем, что играют два игрока, а первый ход даётся игрокам по очереди. Изначально у обоих игроков по 5 карт, а количество карт для вылета — 10 (если счет 9-9, то игра идёт до преимущества в 2 очка). Для режима 'Duel' есть рейтинг игроков, который можно посмотреть используя /top (если ввести /top 5, то бот покажет 5 лучших игроков). Для того, чтобы поиграть, нужно завести чат и пригласить туда бота.\n\n"
+    rules += "б) Режим 'Duel' отличается только тем, что играют два игрока, а первый ход даётся игрокам по очереди. Изначально у обоих игроков по 5 карт, а количество карт для вылета — 10 (если счет 9-9, то игра идёт до преимущества в 2 очка). Для режима 'Duel' есть рейтинг игроков, который можно посмотреть используя /top (если ввести /top 5, то бот покажет 5 лучших игроков).\n" 
+    rules += "Для того, чтобы играть рейтинговые игры, нужно написать /findduel боту в личные сообщения (можно играть и дуэль в чате, но тогда она будет нерейтинговой), он начнёт поиск соперника (можно написать /findduel x, где x - число и среди соперников будут искаться только те, у которых рейтинг отклоняется не больше чем на x от вашего)\n\n"
     rules += "3) Чтобы начать игру, используйте /creategame, затем ждите, пока присоединятся игроки, и используйте /startgame для начала. Остальные комбинации можно посмотреть, написав /.\n\n"
-    rules += "P.S. если хотите играть хоть с кем-нибудь, то вот чат с игроками, welcome:\nhttps://t.me/joinchat/FxJb5hGvQ0Y-t6XiRLNCnw"
+    rules += "P.S. если хотите играть хоть с кем-нибудь в пати режиме, то вот чат с игроками, welcome:\nhttps://t.me/joinchat/FxJb5hGvQ0Y-t6XiRLNCnw"
     try:
         bot.send_message(message.chat.id, rules)
     except Exception as e:
@@ -1015,6 +1017,26 @@ def getSuits(message):
     except Exception as e:
         logging.info(str(e))
 
+@bot.message_handler(commands=['hands_ru'])
+def getHandsRu(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    helplist = 'Комбинации в возрастающем порядке:\n'
+    helplist += "0 - Старшая карта (Пример хода: /m 0K, Старшая карта - король)\n"
+    helplist += "1 - Пара карт одного ранга: (/m 18, Пара восьмёрок)\n"
+    helplist += "2 - Две пары: (/m 28J, Пара восьмёрок и вальтов)\n"
+    helplist += "3 - Три карты одного ранга(сет): (/m 3K, Сет королей)\n"
+    helplist += "4 - Стрит (Пять карт последовательного ранга, допустим 23456, при ходе вы указываете только старшую карту): (/m 46, Стрит до шести)\n"
+    helplist += "5 - Флеш (Пять карт одной масти, вы должны указать старшую карту): (/m 5K0, флеш червовый до короля (указываем червового короля))\n"
+    helplist += "Также, в отличие от покера, тем меньше старшая карта - тем старше флеш\n"
+    helplist += "6 - Фул-хаус (Три карты одного ранга + две карты одного ранга, сет + пара): (/m 6JK, сет вальтов и пара королей)\n"
+    helplist += "7 - Каре (четыре карты одного ранга): (/m 70, Четыре десятки)\n"
+    helplist += "8 - Стрит-флеш (одновременно и стрит, и флеш, допустим 23456 и все червовые - это стрит червовый до 6, нужно указать старшую карту): (/m 8J0, стрит червовый до вальта)\n"
+    try:
+        bot.send_message(message.chat.id, helplist)
+    except Exception as e:
+        logging.info(str(e))
+
 @bot.message_handler(commands=['hands'])
 def getHands(message):
     registerChat(message.chat.id)
@@ -1057,7 +1079,7 @@ def GetOpponentForDuel(player):
     duelSearchQueue.append(player)
     return None
 
-@bot.message_handler(commands=['findDuel'])
+@bot.message_handler(commands=['findduel'])
 def findDuel(message):
     global gamesByChatId
     global playerById
