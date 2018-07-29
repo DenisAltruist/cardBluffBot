@@ -137,7 +137,7 @@ class Stats():
         if (self.data[7] == '-') or (self.data[7] is None) or (self.data[7] == ''):
             self.data[7] = '1200'
 
-    def addDuel(self, place, opponentStats):
+    def addDuel(self, place, opponentStats, isDuelRateGame):
         self.checkDuelRating()
         if place == 1:
             self.change(1, 1)
@@ -148,6 +148,8 @@ class Stats():
         self.change(3, 1)
             
         #ELO
+        if not isDuelRateGame:
+            return
         opponentStats.checkDuelRating()
         Ra = int(self.data[7])
         delta = 0
@@ -272,12 +274,12 @@ class Player:
         if game.isCalceled:
             return
         restNumberOfPlayers = len(game.alivePlayers)
-        if (game.numberOfPlayers == 2 and game.numberOfRounds >= self.MIN_NUMBER_OF_ROUNDS):
+        if (game.numberOfPlayers == 2 and game.numberOfRounds >= config.MIN_NUMBER_OF_ROUNDS):
             opponent = game.players[0]
             if opponent == self:
                 opponent = game.players[1]
-            self.stats.addDuel(restNumberOfPlayers, opponent.stats)
-        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= self.MIN_NUMBER_OF_ROUNDS):
+            self.stats.addDuel(restNumberOfPlayers, opponent.stats, game.isDuelRateGame)
+        elif (game.numberOfPlayers >= 3 and game.numberOfRounds >= config.MIN_NUMBER_OF_ROUNDS):
             self.stats.addParty(restNumberOfPlayers, game.numberOfPlayers)
     
   
@@ -296,8 +298,8 @@ class Player:
         return int(self.stats.data[7])
     
     #in the moment after end of duel (troubles in other situations beacause previousRate is undef)
-    def getDeltaDuelRating(self, numberOfStartedRounds):
-        if numberOfStartedRounds < config.MIN_NUMBER_OF_ROUNDS:
+    def getDeltaDuelRating(self, numberOfStartedRounds, isDuelRateGame):
+        if (numberOfStartedRounds < config.MIN_NUMBER_OF_ROUNDS) or (not isDuelRateGame):
             return "0"
         currRate = int(self.stats.data[7])
         prevRate = int(self.stats.previousRate)
@@ -749,8 +751,8 @@ class Game:
             if looser == winner:
                 looser = self.players[1]
             ratingMsg = "Duel rating changes:\n"
-            ratingMsg += getDuelScoreFormat(1, winner) + " " + winner.getDeltaDuelRating(self.numberOfRounds) + "\n"
-            ratingMsg += getDuelScoreFormat(2, looser) + " " + looser.getDeltaDuelRating(self.numberOfRounds) + "\n"
+            ratingMsg += getDuelScoreFormat(1, winner) + " " + winner.getDeltaDuelRating(self.numberOfRounds, self.isDuelRateGame) + "\n"
+            ratingMsg += getDuelScoreFormat(2, looser) + " " + looser.getDeltaDuelRating(self.numberOfRounds, self.isDuelRateGame) + "\n"
             self.printOut(ratingMsg)
         self.initialize()
 
