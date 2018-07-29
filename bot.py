@@ -1172,9 +1172,9 @@ def getTop(message):
         try: 
             bestK = int(currText)
         except ValueError:
-            return
+            bestK = 10
         if bestK <= 0:
-            return
+            bestK = 10
     bestPlayers = getBestPlayers(bestK)
     result = ''
     for i in range(len(bestPlayers)):
