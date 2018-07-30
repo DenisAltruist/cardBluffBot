@@ -265,6 +265,7 @@ class Player:
     
     def join(self, game):
         self.chat_id = game.chat_id
+        self.isPlaying = True   
     
     def leave(self, game):
         self.chat_id = None
@@ -1228,12 +1229,11 @@ def getmessage(message):
         if not currGame.isHigherHand(currGame.parseStringToHand(currText)):
             currGame.printOut("It's a not higher than current")
         else:             
-             
             currGame.updateHand(currGame.parseStringToHand(currText))
             currGame.stringOfMove = currText
-        currGame.removeMoveFromEventSet()
-        currGame.addMoveToEventSet()
-        currGame.logMove()
+            currGame.removeMoveFromEventSet()
+            currGame.addMoveToEventSet()
+            currGame.logMove()
     else: 
         if currGame.isStarted:
             currGame.printOut("Incorrect move")
