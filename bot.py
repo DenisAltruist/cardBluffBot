@@ -894,6 +894,7 @@ def pollingEventSet():
     if len(eventSet) == 0:
         return
     nextTime = eventSet[0][0]
+    print(str(curTime) + " " + str(nextTime))
     if curTime == nextTime:
         curGame = eventSet[0][1]
         if not curGame.isStarted:
