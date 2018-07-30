@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 from threading import Thread
+import threading
 
 import telebot
 import logging
@@ -17,6 +18,7 @@ from telebot import types
 from random import shuffle
 
 con = None
+lock = threading.Lock()
 
 #db variables (table players):
     #id
@@ -33,13 +35,13 @@ con = None
 bot = telebot.TeleBot(config.TOKEN)
 bot_ = telebot.TeleBot(config.TOKEN)
 gamesByChatId = dict()
+throttler = dict()
 cardSuits = [u'\U00002764', u'\U00002666', u'\U00002660', u'\U00002663']
 neutral = u'\U0001F610'
 typeOfCard = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5, "8": 6, "9": 7, "0": 8, "j": 9, "q": 10, "k": 11, "a": 12}
 playerById = dict()
 eventSet = []
 duelSearchQueue = []
-
 
 class WebhookServer(object):
     @cherrypy.expose
@@ -364,7 +366,29 @@ class Game:
             if nextHand[0] == 5:
                 return nextHand[1] < self.currHand[1] 
             else:
-                return nextHand > self.currHand 
+                return nextHand > self.currHand
+    
+    def isMaxHand(self):
+        for i in range(9):
+            comb = i
+            if (comb == 8) or (comb == 5):
+                for j in range(4):
+                    if (comb == 8) and (self.hasHand([comb, 3, j])) and (self.isHigherHand([comb, 3, j])):
+                        return False
+                    for k in range(4, 13):
+                        if (self.hasHand([comb, k, j]) and self.isHigherHand([comb, k, j])):
+                            return False
+            elif comb == 4:
+                for j in range(4, 13):
+                    if (self.hasHand([comb, j, 0]) and self.isHigherHand([comb, j, 0 ])):
+                        return False
+            else:
+                for i in range(13):
+                    for j in range(13):
+                       if (self.hasHand([comb, i, j]) and self.isHigherHand([comb, k, j])):
+                           return False
+            return True
+
 
     def parseStringToHand(self, s):
         s = s.lower()
@@ -510,6 +534,7 @@ class Game:
         
 
     def startRound(self):
+        self.currHand = [-1, -1, -1]
         if self.numberOfPlayers != 2:
             shuffle(self.alivePlayers)
         else:
@@ -672,7 +697,14 @@ class Game:
             return False
         return (self.cntOfCardsByRang.get(rang) >= count)
 
-    def hasHand(self):
+    def hasHand(self, hand = None):
+        if not (hand is None):
+            tmp = self.currHand.copy()
+            self.currHand = hand
+            res = self.hasHand()
+            self.currHand = tmp
+            return res
+
         tp = self.currHand[0]
         res = True
         if tp == 0:
@@ -775,8 +807,6 @@ class Game:
                 self.addCardsToPlayer(self.alivePlayers[prevPlayer], 1)
         else:
             self.kick(leaver)
-
-        self.currHand = [-1, -1, -1]
         self.printNumberOfCards()
         if len(self.alivePlayers) == 1:
             self.finish()
@@ -1211,6 +1241,31 @@ def getmsg(message):
         currGame.finishRound()   
     gamesByChatId[message.chat.id] = currGame
 
+
+@bot.message_handler(commands=['b'])
+def getBlock(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    global gamesByChatId
+    currGame = gamesByChatId[message.chat.id]
+    currPlayer = playerById[message.from_user.id]
+    if (not currGame.isCreated or not currGame.isStarted):
+        return
+    if currGame.isDuelRateGame:
+        currGame.printOut(message.text, currPlayer)
+    if (currPlayer != currGame.alivePlayers[currGame.currPlayer]):
+        return
+    if currGame.firstMove():
+        currGame.printOut("You can't use block at the first move")
+    else:
+        currGame.removeMoveFromEventSet()
+        if currGame.isMaxHand():
+            currGame.printNumberOfCards()
+            currGame.startRound()
+        else:
+            currGame.addPenaltyCard()
+    gamesByChatId[message.chat.id] = currGame
+
 @bot.message_handler(commands=['m'])
 def getmessage(message):
     registerChat(message.chat.id)
@@ -1254,8 +1309,9 @@ class TimerThread(Thread):
         Thread.__init__(self)
     
     def run(self):
-        while True:
+        with lock:
             pollingEventSet()
+        time.sleep(1)
 
 class MainThread(Thread):
     def __init__(self):
