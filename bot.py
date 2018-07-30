@@ -853,11 +853,14 @@ def pollingEventSet():
 
     #fuckups
     curTime = int(time.time())
-    while ((len(eventSet) != 0) and (eventSet[0][0] < curTime)):
-        eventSet.remove(eventSet[0])
-        eventSet = sorted(eventSet)
+    while len(eventSet) > 0:
+        if eventSet[0][0] < curTime:
+            eventSet.remove(eventSet[0])
+            eventSet = sorted(eventSet)
+        else:
+            break
     #
-    if (len(eventSet) == 0):
+    if len(eventSet) == 0:
         return
     nextTime = eventSet[0][0]
     if curTime == nextTime:
