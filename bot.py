@@ -18,7 +18,6 @@ from telebot import types
 from random import shuffle
 
 con = None
-lock = threading.Lock()
 
 #db variables (table players):
     #id
@@ -1245,6 +1244,7 @@ def getmsg(message):
 
 @bot.message_handler(commands=['b'])
 def getBlock(message):
+    return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     global gamesByChatId
@@ -1310,9 +1310,12 @@ class TimerThread(Thread):
         Thread.__init__(self)
     
     def run(self):
-        with lock:
-            pollingEventSet()
-        time.sleep(1)
+        while True:
+            try:
+                pollingEventSet()
+                time.sleep(1)
+            except Exception as e:
+                print(str(e))
 
 class MainThread(Thread):
     def __init__(self):
