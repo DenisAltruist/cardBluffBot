@@ -700,7 +700,7 @@ class Game:
 
     def hasHand(self, hand = None):
         if not (hand is None):
-            tmp = self.currHand.copy()
+            tmp = list(self.currHand)
             self.currHand = hand
             res = self.hasHand()
             self.currHand = tmp
