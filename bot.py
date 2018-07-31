@@ -252,8 +252,8 @@ class Player:
 
         self.id = user.id
         self.deltaForSearchDuel = 0
-        self.queryFreq = 0.0
-        self.prevQueryTime = 0.0
+        self.queryFreq = 0
+        self.prevQueryTime = 0
         self.fullname = user.first_name
         self.isPlaying = False
         if (self.fullname == ""):
