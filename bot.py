@@ -11,6 +11,7 @@ import random
 import time
 import sqlite3 as lite
 import cherrypy
+import copy
  
 
 
@@ -699,10 +700,10 @@ class Game:
 
     def hasHand(self, hand = None):
         if not (hand is None):
-            tmp = [self.currHand[0], self.currHand[1], self.currHand[2]]
-            self.currHand = hand
+            tmp = copy.copy(self.currHand)
+            self.currHand = copy.copy(hand)
             res = self.hasHand()
-            self.currHand = tmp
+            self.currHand = copy.copy(tmp)
             return res
 
         tp = self.currHand[0]
