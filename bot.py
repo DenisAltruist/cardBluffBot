@@ -30,6 +30,7 @@ con = None
     #totalSumOfPlaces
     #duelsRating
     #fullname
+    #streak
 
 
 bot = telebot.TeleBot(config.TOKEN)
@@ -90,7 +91,7 @@ class Stats():
     def insert(self, data):
         with lite.connect("players.db") as con:
             cur = con.cursor()
-            cur.executemany("INSERT INTO players VALUES (?,?,?,?,?,?,?,?,?)", data) 
+            cur.executemany("INSERT INTO players VALUES (?,?,?,?,?,?,?,?,?,?)", data) 
             con.commit()
 
     def edit(self, id, type, newValue):
@@ -113,6 +114,8 @@ class Stats():
                 field = "duelsRating"
             elif type == 8:
                 field = "fullname"
+            elif type == 9:
+                field = "streak"
 
             sql = "UPDATE players SET " + field + " = " + str(newValue) + " WHERE id = " + str(self.id)
             cur.execute(sql)
@@ -139,13 +142,30 @@ class Stats():
         if (self.data[7] == '-') or (self.data[7] is None) or (self.data[7] == ''):
             self.data[7] = '1200'
 
+    def addStreakDelta(self):
+        streak = int(self.data[9])
+        if abs(streak) < 2:
+            return
+        if streak < 0:
+            self.change(7, (streak + 1) * 2)
+        else:
+            self.change(7, (streak - 1) * 2)
+
     def addDuel(self, place, opponentStats, isDuelRateGame):
         self.checkDuelRating()
         if place == 1:
             self.change(1, 1)
             self.change(6, 1)
+            if int(self.data[9]) < 0:
+                self.change(9, int(self.data[9]) + 1)
+            else:
+                self.change(9, 1)
         else:
             self.change(6, 2)
+            if int(self.data[9]) > 0:
+                self.change(9, -int(self.data[9]) - 1)
+            else:
+                self.change(9, -1)
         self.change(5, 2)
         self.change(3, 1)
             
@@ -174,8 +194,10 @@ class Stats():
             delta = newDuelRating - Ra
         else:
             delta = int(opponentStats.previousRate) - int(opponentStats.data[7])
+            opponentStats.addStreakDelta()
         self.previousRate = self.data[7]
-        self.change(7, delta) 
+        self.change(7, delta)
+        self.addStreakDelta() 
 
 
     def addParty(self, place, numberOfPlayers):
@@ -221,6 +243,7 @@ class Stats():
         res += "Parties played: " + self.data[4] + "\n"
         res += "Party winrate: " + partyWinrate + "%\n"
         res += "Skill: " + skill + "%\n"
+        res += "Duel streak: " + self.data[9] + "\n" 
         return res
 
 

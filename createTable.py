@@ -13,7 +13,7 @@ import sqlite3 as lite
 try:
     con = lite.connect("players.db")
     cur = con.cursor()
-    cur.execute("""CREATE TABLE players (id text, cntOfDuelWins text, cntOfPartyWins text, cntOfPlayedDuels text, cntOfPlayedParties text, totalAmountOfPlayers text, totalSumOfPlaces text, duelsRating text, fullname text)""")
+    cur.execute("""CREATE TABLE players (id text, cntOfDuelWins text, cntOfPartyWins text, cntOfPlayedDuels text, cntOfPlayedParties text, totalAmountOfPlayers text, totalSumOfPlaces text, duelsRating text, fullname text, streak text)""")
 
 except lite.Error as e:
     print("Database connection error")
