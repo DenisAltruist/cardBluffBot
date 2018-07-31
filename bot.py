@@ -127,8 +127,8 @@ class Stats():
         self.id = id
         self.previousRate = '1200'
         if self.data == []:
-            self.data = [str(id), '0', '0', '0', '0', '0', '0', '1200', fullname]
-            self.insert([(str(id), '0', '0', '0', '0', '0', '0', '1200', fullname)])
+            self.data = [str(id), '0', '0', '0', '0', '0', '0', '1200', fullname, '0'] #kek
+            self.insert([(str(id), '0', '0', '0', '0', '0', '0', '1200', fullname, '0')])
         else:
             self.data = list(self.data[0])
         self.checkDuelRating()
