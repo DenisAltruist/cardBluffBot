@@ -370,8 +370,7 @@ class Game:
                 return nextHand > self.currHand
     
     def isMaxHand(self):
-        for i in range(9):
-            comb = i
+        for comb in range(9):
             if (comb == 8) or (comb == 5):
                 for j in range(4):
                     if (comb == 8) and (self.hasHand([comb, 3, j])) and (self.isHigherHand([comb, 3, j])):
@@ -700,7 +699,7 @@ class Game:
 
     def hasHand(self, hand = None):
         if not (hand is None):
-            tmp = list(self.currHand)
+            tmp = [self.currHand[0], self.currHand[1], self.currHand[2]]
             self.currHand = hand
             res = self.hasHand()
             self.currHand = tmp
