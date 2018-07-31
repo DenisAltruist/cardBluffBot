@@ -383,14 +383,14 @@ class Game:
                             return False
             elif comb == 4:
                 for j in range(4, 13):
-                    if (self.hasHand([comb, j, 0]) and self.isHigherHand([comb, j, 0 ])):
+                    if (self.hasHand([comb, j, 0]) and self.isHigherHand([comb, j, 0])):
                         return False
             else:
                 for i in range(13):
                     for j in range(13):
                        if (self.hasHand([comb, i, j]) and self.isHigherHand([comb, i, j])):
                            return False
-            return True
+        return True
 
 
     def parseStringToHand(self, s):
