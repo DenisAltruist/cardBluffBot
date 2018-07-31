@@ -252,6 +252,8 @@ class Player:
 
         self.id = user.id
         self.deltaForSearchDuel = 0
+        self.queryFreq = 0.0
+        self.prevQueryTime = 0.0
         self.fullname = user.first_name
         self.isPlaying = False
         if (self.fullname == ""):
@@ -931,8 +933,22 @@ def initializeLogger():
     logging.basicConfig(filename='ldata.log', level=logging.INFO)
 
 def registerPlayer(user):
+    global playerById
+    currTime = int(time.time())
+    needToRaiseException = False
     if playerById.get(user.id) is None:
         playerById[user.id] = Player(user)
+    else:
+        prevTime = playerById[user.id].prevQueryTime
+        if (currTime - prevTime >= config.GOOD_TIME_INACTIVITY):
+            playerById[user.id] = 0
+        if (currTime - prevTime <= config.MIN_RESPONSE_TIME_DELTA):
+            playerById[user.id].queryFreq += 1
+        if (playerById[user.id].queryFreq > config.MAX_QUERY_LIMIT_PER_USER):
+            needToRaiseException = True
+    playerById[user.id].prevQueryTime = currTime
+    if (needToRaiseException):
+        raise Exception("DDoS User") 
 
 def registerChat(id):
     if (gamesByChatId.get(id) is None) or (gamesByChatId.get(id).isRegistered == False):
