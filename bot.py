@@ -413,6 +413,8 @@ class Game:
             else:
                 for i in range(13):
                     for j in range(13):
+                       if i == j:
+                           continue
                        if (self.hasHand([comb, i, j]) and self.isHigherHand([comb, i, j])):
                            return False
         return True
