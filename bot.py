@@ -1260,7 +1260,6 @@ def getmsg(message):
 
 @bot.message_handler(commands=['b'])
 def getBlock(message):
-    return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     global gamesByChatId
@@ -1277,6 +1276,7 @@ def getBlock(message):
     else:
         currGame.removeMoveFromEventSet()
         if currGame.isMaxHand():
+            currGame.reveal()
             currGame.printNumberOfCards()
             currGame.startRound()
         else:
