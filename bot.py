@@ -941,7 +941,7 @@ def registerPlayer(user):
     else:
         prevTime = playerById[user.id].prevQueryTime
         if (currTime - prevTime >= config.GOOD_TIME_INACTIVITY):
-            playerById[user.id] = 0
+            playerById[user.id].queryFreq = 0
         if (currTime - prevTime <= config.MIN_RESPONSE_TIME_DELTA):
             playerById[user.id].queryFreq += 1
         if (playerById[user.id].queryFreq > config.MAX_QUERY_LIMIT_PER_USER):
