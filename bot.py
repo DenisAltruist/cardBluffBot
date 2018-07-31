@@ -156,16 +156,18 @@ class Stats():
         if place == 1:
             self.change(1, 1)
             self.change(6, 1)
-            if int(self.data[9]) < 0:
-                self.change(9, int(self.data[9]) + 1)
-            else:
-                self.change(9, 1)
+            if isDuelRateGame:
+                if int(self.data[9]) < 0:
+                    self.change(9, int(self.data[9]) + 1)
+                else:
+                    self.change(9, 1)
         else:
             self.change(6, 2)
-            if int(self.data[9]) > 0:
-                self.change(9, -int(self.data[9]) - 1)
-            else:
-                self.change(9, -1)
+            if isDuelRateGame:
+                if int(self.data[9]) > 0:
+                    self.change(9, -int(self.data[9]) - 1)
+                else:
+                    self.change(9, -1)
         self.change(5, 2)
         self.change(3, 1)
             
