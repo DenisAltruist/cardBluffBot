@@ -134,8 +134,11 @@ class Stats():
         self.checkDuelRating()
 
 
-    def change(self, tp, delta):    
-        self.data[tp] = str(max(0, int(self.data[tp]) + delta))
+    def change(self, tp, delta, streak = None):
+        if tp == 9:
+            self.data[tp] = str(int(self.data[tp]) + delta)
+        else:
+            self.data[tp] = str(max(0, int(self.data[tp]) + delta))
         self.edit(self.id, tp, self.data[tp])
 
     def checkDuelRating(self):
@@ -240,12 +243,12 @@ class Stats():
         if self.data[3] == '0':
             currRating = '-'
         res = "Duel rating: " + currRating + "\n"
+        res += "Duel streak: " + self.data[9] + "\n"
         res += "Duels played: " + self.data[3] + "\n"
         res += "Duel winrate: " + duelWinrate + "%\n"
         res += "Parties played: " + self.data[4] + "\n"
         res += "Party winrate: " + partyWinrate + "%\n"
         res += "Skill: " + skill + "%\n"
-        res += "Duel streak: " + self.data[9] + "\n" 
         return res
 
 
