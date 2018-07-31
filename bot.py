@@ -371,6 +371,8 @@ class Game:
                 return nextHand > self.currHand
     
     def isMaxHand(self):
+        if not self.hasHand():
+            return False
         for comb in range(9):
             if (comb == 8) or (comb == 5):
                 for j in range(4):
