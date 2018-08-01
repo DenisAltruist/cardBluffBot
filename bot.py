@@ -161,7 +161,7 @@ class Stats():
             self.change(6, 1)
             if isDuelRateGame:
                 if int(self.data[9]) < 0:
-                    self.change(9, int(self.data[9]) + 1)
+                    self.change(9, -int(self.data[9]) + 1)
                 else:
                     self.change(9, 1)
         else:
