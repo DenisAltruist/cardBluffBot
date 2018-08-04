@@ -369,6 +369,7 @@ class Game:
         self.isFirstMove = False     
         self.isCalceled = False
         self.isDuelRateGame = False
+        self.isLocked = False
         self.alivePlayers = []
         self.players = []
         self.chat_id = None
@@ -486,7 +487,7 @@ class Game:
             res = res + self.getName(key) + ": "
             if not (key in self.alivePlayers):
                 res = res + "Lost"
-            else: 
+            else:
                 res = res + str(value)
                 if (self.isLooser.get(key) == 1):
                     res = res + " " + neutral
@@ -930,6 +931,7 @@ def pollingEventSet():
     print(str(curTime) + " " + str(nextTime))
     if curTime == nextTime:
         curGame = eventSet[0][1]
+        curGame.isLocked = True
         if not curGame.isStarted:
             curGame.cancel()
             try:
@@ -939,9 +941,13 @@ def pollingEventSet():
             gamesByChatId[curGame.chat_id] = None
         else:
             if ((not curGame is None) and (curGame.numberOfPlayers != 0)):
-                curGame.addPenaltyCard()
+                if curGame.numberOfRounds == 1:
+                    curGame.removePlayer(curGame.players[curGame.currPlayer])
+                else:
+                    curGame.addPenaltyCard()
         eventSet.remove(eventSet[0])
         eventSet = sorted(eventSet)
+        curGame.isLocked = False
 
 def initializeFromDatabase():
     class PseudoUser:
@@ -1048,7 +1054,7 @@ def getHelpRu(message):
     rules += "Как проходит раунд: каждый раунд выбирается случайный порядок игроков, в соответствии с которым они будут ходить. Ход заключается в том, что игрок называет любую покерную комбинацию (посмотреть нумерацию комбинаций можно с помощью /hands_ru, а мастей — /suits), которая выше, чем предыдущая (если он ходит первым — то любую), либо он может сказать 'не верю' (/r) и вскрыть предыдущую комбинацию.\n\n" 
     rules += "Рано или поздно кто-то вскроет текущую комбинацию, так как они повышаются. При вскрытии каждый игрок раскрывает свои карты, и последняя названная комбинации ищется среди всех карт, которые были на руках у игроков в этом раунде. Если она присутствует, то игроку, который сказал 'не верю' будет дана дополнительная карта в новом раунде, а иначе дополнительная карта будет дана игроку, заявившему комбинацию. После вскрытия, колода карт перетасовывается, и каждому игроку раздают столько карт, сколько раундов он проиграл + одна изначальная.\n\n"
     rules += "На самом деле кроме вскрытия есть возможность блокировать комбинацию (/b). Это значит, что вы говорите, что текущая комбинация - максимальна среди всех возможных в данной раздаче (она должна присутствовать, блок работает даже если максимальных комбинаций несколько). Если это действительно так, то никто не получит карты в новом раунде. Иначе, карту получает игрок сыгравший /b\n\n"
-    rules += "б) Режим 'Duel' отличается только тем, что играют два игрока, а первый ход даётся игрокам по очереди. Изначально у обоих игроков по 5 карт, а количество карт для вылета — 10 (если счет 9-9, то игра идёт до преимущества в 2 очка). Для режима 'Duel' есть рейтинг игроков, который можно посмотреть используя /top (если ввести /top 5, то бот покажет 5 лучших игроков).\n" 
+    rules += "б) Режим 'Duel' отличается только тем, что играют два игрока, а первый ход даётся игрокам по очереди. Изначально у обоих игроков по 5 карт, а количество карт для вылета — 10 (если счет 9-9, то игра идёт до преимущества в 2 очка). Для режима 'Duel' есть рейтинг игроков (Эло с бонусами за винстрик и штрафами за лузстрик) который можно посмотреть используя /top (если ввести /top 5, то бот покажет 5 лучших игроков).\n" 
     rules += "Для того, чтобы играть рейтинговые игры, нужно написать /findduel боту в личные сообщения (можно играть и дуэль в чате, но тогда она будет нерейтинговой), он начнёт поиск соперника (можно написать /findduel x, где x - число и среди соперников будут искаться только те, у которых рейтинг отклоняется не больше чем на x от вашего)\n\n"
     rules += "3) Чтобы начать игру, используйте /creategame, затем ждите, пока присоединятся игроки, и используйте /startgame для начала. Остальные комбинации можно посмотреть, написав /.\n\n"
     rules += "P.S. если хотите играть хоть с кем-нибудь в пати режиме, то вот чат с игроками, welcome:\nhttps://t.me/joinchat/FxJb5hGvQ0Y-t6XiRLNCnw"
@@ -1183,13 +1189,11 @@ def findDuel(message):
     if len(message.text) == 9:
         delta = 10000
     else:
-        delta = 0
         try:
             delta = int(strDelta)
         except ValueError:
-            return
-        if delta < 0:
-            delta = abs(delta)
+            delta = 10000
+        delta = abs(delta)
     player.deltaForSearchDuel = delta
     opponent = GetOpponentForDuel(player)
     if opponent is None:
@@ -1278,6 +1282,10 @@ def getmsg(message):
     registerPlayer(message.from_user)
     global gamesByChatId
     currGame = gamesByChatId[message.chat.id]
+    #timer
+    if currGame.isLocked:
+        return
+    #
     currPlayer = playerById[message.from_user.id]
     if (not currGame.isCreated or not currGame.isStarted):
         return
@@ -1299,6 +1307,10 @@ def getBlock(message):
     registerPlayer(message.from_user)
     global gamesByChatId
     currGame = gamesByChatId[message.chat.id]
+    #timer
+    if currGame.isLocked:
+        return
+    #
     currPlayer = playerById[message.from_user.id]
     if (not currGame.isCreated or not currGame.isStarted):
         return
@@ -1324,6 +1336,10 @@ def getmessage(message):
     registerPlayer(message.from_user)
     global gamesByChatId
     currGame = gamesByChatId[message.chat.id]
+    #timer
+    if currGame.isLocked:
+        return
+    #
     currText = message.text[3:]
     currPlayer = playerById[message.from_user.id]
     if (not currGame.isStarted):
@@ -1335,7 +1351,9 @@ def getmessage(message):
     if currGame.isCorrectMove(currText) and currGame.started():
         if not currGame.isHigherHand(currGame.parseStringToHand(currText)):
             currGame.printOut("It's a not higher than current")
-        else:             
+        else:
+            if currGame.isLocked:
+                return
             currGame.updateHand(currGame.parseStringToHand(currText))
             currGame.stringOfMove = currText
             currGame.removeMoveFromEventSet()
@@ -1393,4 +1411,3 @@ if __name__ == "__main__":
     mainThread.start()
     timerThread = TimerThread()
     timerThread.start()
-
