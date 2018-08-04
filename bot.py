@@ -370,6 +370,7 @@ class Game:
         self.isCalceled = False
         self.isDuelRateGame = False
         self.isLocked = False
+        self.isBrokenDuel = False
         self.alivePlayers = []
         self.players = []
         self.chat_id = None
@@ -414,6 +415,10 @@ class Game:
                 for j in range(4, 13):
                     if (self.hasHand([comb, j, 0]) and self.isHigherHand([comb, j, 0])):
                         return False
+            elif (comb <= 1) or (comb == 3) or (comb == 7):
+                for i in range(13):
+                    if (self.hasHand([comb, i, 0]) and self.isHigherHand([comb, i, 0])):
+                           return False
             else:
                 for i in range(13):
                     for j in range(13):
@@ -479,6 +484,8 @@ class Game:
         player.join(self)
         
     def printNumberOfCards(self):
+        if self.isBrokenDuel:
+            return
         if self.isStarted == False:
             self.printOut("The game hasn't started yet")
             return
@@ -809,7 +816,8 @@ class Game:
 
     def finish(self):
         self.alivePlayers[0].leave(self)
-        self.printOut('The winner is ' + self.getLinkedName(self.alivePlayers[0]))
+        if not self.isBrokenDuel:
+            self.printOut('The winner is ' + self.getLinkedName(self.alivePlayers[0]))
         self.isRegistered = False
         if self.numberOfPlayers == 2:
             time.sleep(1)
@@ -942,6 +950,7 @@ def pollingEventSet():
         else:
             if ((not curGame is None) and (curGame.numberOfPlayers != 0)):
                 if curGame.numberOfRounds == 1 and curGame.isDuelRateGame:
+                    curGame.isBrokenDuel = True
                     curGame.removePlayer(curGame.players[curGame.currPlayer])
                 else:
                     curGame.addPenaltyCard()
