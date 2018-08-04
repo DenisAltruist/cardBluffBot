@@ -941,7 +941,7 @@ def pollingEventSet():
             gamesByChatId[curGame.chat_id] = None
         else:
             if ((not curGame is None) and (curGame.numberOfPlayers != 0)):
-                if curGame.numberOfRounds == 1:
+                if curGame.numberOfRounds == 1 and curGame.isDuelRateGame:
                     curGame.removePlayer(curGame.players[curGame.currPlayer])
                 else:
                     curGame.addPenaltyCard()
