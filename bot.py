@@ -19,6 +19,7 @@ from telebot import types
 from random import shuffle
 
 con = None
+lock = threading.Lock()
 
 #db variables (table players):
     #id
@@ -34,7 +35,6 @@ con = None
 
 
 bot = telebot.TeleBot(config.TOKEN)
-bot_ = telebot.TeleBot(config.TOKEN)
 gamesByChatId = dict()
 throttler = dict()
 cardSuits = [u'\U00002764', u'\U00002666', u'\U00002660', u'\U00002663']
@@ -369,8 +369,8 @@ class Game:
         self.isFirstMove = False     
         self.isCalceled = False
         self.isDuelRateGame = False
-        self.isLocked = False
         self.isBrokenDuel = False
+        self.isLocked = False
         self.alivePlayers = []
         self.players = []
         self.chat_id = None
@@ -811,9 +811,6 @@ class Game:
             res += "\n"
         self.printOut(res)
 
-    def started(self):
-        return self.isStarted
-
     def finish(self):
         self.alivePlayers[0].leave(self)
         if not self.isBrokenDuel:
@@ -849,6 +846,8 @@ class Game:
                 self.addCardsToPlayer(self.alivePlayers[prevPlayer], 1)
         else:
             self.kick(leaver)
+            if (self.numberOfRounds == 1) and (self.numberOfPlayers == 2):
+                self.isBrokenDuel = True
         self.printNumberOfCards()
         if len(self.alivePlayers) == 1:
             self.finish()
@@ -939,24 +938,27 @@ def pollingEventSet():
     print(str(curTime) + " " + str(nextTime))
     if curTime == nextTime:
         curGame = eventSet[0][1]
+        if curGame.isLocked:
+            return
         curGame.isLocked = True
-        if not curGame.isStarted:
-            curGame.cancel()
-            try:
-                bot.delete_message(curGame.chat_id, curGame.message_id)
-            except Exception as e:
-                logging.info(str(e))
-            gamesByChatId[curGame.chat_id] = None
-        else:
-            if ((not curGame is None) and (curGame.numberOfPlayers != 0)):
-                if curGame.numberOfRounds == 1 and curGame.isDuelRateGame:
-                    curGame.isBrokenDuel = True
-                    curGame.removePlayer(curGame.players[curGame.currPlayer])
-                else:
-                    curGame.addPenaltyCard()
+        try:
+            if not curGame.isStarted:
+                curGame.cancel()
+                try:
+                    bot.delete_message(curGame.chat_id, curGame.message_id)
+                except Exception as e:
+                    logging.info(str(e))
+                gamesByChatId[curGame.chat_id] = None
+            else:
+                if ((not curGame is None) and (curGame.numberOfPlayers != 0)):
+                    if curGame.numberOfRounds == 1 and curGame.isDuelRateGame:
+                        curGame.removePlayer(curGame.players[curGame.currPlayer])
+                    else:
+                        curGame.addPenaltyCard()
+        finally:
+            curGame.isLocked = False
         eventSet.remove(eventSet[0])
         eventSet = sorted(eventSet)
-        curGame.isLocked = False
 
 def initializeFromDatabase():
     class PseudoUser:
@@ -1236,7 +1238,14 @@ def inline(c):
 def leavegame(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    gamesByChatId[message.chat.id].removePlayer(playerById[message.from_user.id]) 
+    currGame = gamesByChatId[message.chat.id]
+    if currGame.isLocked:
+        return
+    currGame.isLocked = True
+    try:
+        gamesByChatId[message.chat.id].removePlayer(playerById[message.from_user.id])
+    finally:
+        currGame.isLocked = False
 
 @bot.message_handler(commands=['countcards'])
 def countcards(message):
@@ -1248,7 +1257,14 @@ def countcards(message):
 def startgame(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    gamesByChatId[message.chat.id].start(playerById[message.from_user.id])
+    currGame = gamesByChatId[message.chat.id]
+    if currGame.isLocked:
+        return
+    currGame.isLocked = True
+    try:
+        currGame.start(playerById[message.from_user.id])
+    finally:
+        currGame.isLocked = False
 
 @bot.message_handler(commands=['tr'])
 def getTime(message):
@@ -1291,10 +1307,6 @@ def getmsg(message):
     registerPlayer(message.from_user)
     global gamesByChatId
     currGame = gamesByChatId[message.chat.id]
-    #timer
-    if currGame.isLocked:
-        return
-    #
     currPlayer = playerById[message.from_user.id]
     if (not currGame.isCreated or not currGame.isStarted):
         return
@@ -1305,8 +1317,14 @@ def getmsg(message):
     if currGame.firstMove():
         currGame.printOut("You can't reveal at the first move")
     else:
-        currGame.removeMoveFromEventSet()
-        currGame.finishRound()   
+        if currGame.isLocked:
+            return
+        currGame.isLocked = True
+        try:
+            currGame.removeMoveFromEventSet()
+            currGame.finishRound()
+        finally:
+            currGame.isLocked = False
     gamesByChatId[message.chat.id] = currGame
 
 
@@ -1316,10 +1334,6 @@ def getBlock(message):
     registerPlayer(message.from_user)
     global gamesByChatId
     currGame = gamesByChatId[message.chat.id]
-    #timer
-    if currGame.isLocked:
-        return
-    #
     currPlayer = playerById[message.from_user.id]
     if (not currGame.isCreated or not currGame.isStarted):
         return
@@ -1330,13 +1344,19 @@ def getBlock(message):
     if currGame.firstMove():
         currGame.printOut("You can't use block at the first move")
     else:
-        currGame.removeMoveFromEventSet()
-        if currGame.isMaxHand():
-            currGame.reveal()
-            currGame.printNumberOfCards()
-            currGame.startRound()
-        else:
-            currGame.addPenaltyCard()
+        if currGame.isLocked:
+            return
+        currGame.isLocked = True
+        try:
+            currGame.removeMoveFromEventSet()
+            if currGame.isMaxHand():
+                currGame.reveal()
+                currGame.printNumberOfCards()
+                currGame.startRound()
+            else:
+                currGame.addPenaltyCard()
+        finally:
+            currGame.isLocked = False
     gamesByChatId[message.chat.id] = currGame
 
 @bot.message_handler(commands=['m'])
@@ -1345,10 +1365,6 @@ def getmessage(message):
     registerPlayer(message.from_user)
     global gamesByChatId
     currGame = gamesByChatId[message.chat.id]
-    #timer
-    if currGame.isLocked:
-        return
-    #
     currText = message.text[3:]
     currPlayer = playerById[message.from_user.id]
     if (not currGame.isStarted):
@@ -1357,17 +1373,21 @@ def getmessage(message):
         currGame.printOut(message.text, currPlayer)  
     if (currPlayer != currGame.alivePlayers[currGame.currPlayer]):
         return
-    if currGame.isCorrectMove(currText) and currGame.started():
+    if currGame.isCorrectMove(currText) and currGame.isStarted:
         if not currGame.isHigherHand(currGame.parseStringToHand(currText)):
             currGame.printOut("It's a not higher than current")
         else:
             if currGame.isLocked:
                 return
-            currGame.updateHand(currGame.parseStringToHand(currText))
-            currGame.stringOfMove = currText
-            currGame.removeMoveFromEventSet()
-            currGame.addMoveToEventSet()
-            currGame.logMove()
+            currGame.isLocked = True
+            try:
+                currGame.updateHand(currGame.parseStringToHand(currText))
+                currGame.stringOfMove = currText
+                currGame.removeMoveFromEventSet()
+                currGame.addMoveToEventSet()
+                currGame.logMove()
+            finally:
+                currGame.isLocked = False
     else: 
         if currGame.isStarted:
             currGame.printOut("Incorrect move")
@@ -1400,7 +1420,6 @@ class MainThread(Thread):
         Thread.__init__(self)
     
     def run(self):
-        bot.remove_webhook()
         initializeFromDatabase()
         initializeLogger()
         bot.remove_webhook()
