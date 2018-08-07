@@ -74,16 +74,14 @@ class GlobalStats:
         self.cntOfStartedPartyGames += 1
 
     def printOut(self, id):
-        res = "Number of unique players: " + str(len(self.uniqPlayers)) + "\n"
-        res += "Number of full played duel games: " + str(self.cntOfFullPlayedDuelGames) + "\n"
-        res += "Number of matched duel games " + str(self.cntOfMatchedDuelGames) + "\n"
-        res += "Number of started party games " + str(self.cntOfStartedPartyGames) + "\n"
-        res += "Number of find duel writings " + str(self.cntOfWritedFindDuel) + "\n"
-        print(res)
+        res = "Unique players: " + str(len(self.uniqPlayers)) + "\n"
+        res += "Full played duel games: " + str(self.cntOfFullPlayedDuelGames) + "\n"
+        res += "Matched duel games: " + str(self.cntOfMatchedDuelGames) + "\n"
+        res += "Started party games: " + str(self.cntOfStartedPartyGames) + "\n"
+        res += "Find duel writings: " + str(self.cntOfWritedFindDuel) + "\n"
         try:
             bot.send_message(id, res)
         except Exception as e:
-            print("KEK")
             logging.info(str(e))
 
 globalStats = GlobalStats()
