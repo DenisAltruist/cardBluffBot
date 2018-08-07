@@ -1442,6 +1442,12 @@ def getmessage(message):
             currGame.printOut("Incorrect move")
     gamesByChatId[message.chat.id] = currGame
 
+@bot.message_handler(commands=['globalstats'])
+def getGlobalStats(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    globalStats.printOut(message.chat.id)
+
 @bot.message_handler(content_types=['text'])
 def getText(message):
     global gamesByChatId
@@ -1451,12 +1457,6 @@ def getText(message):
     if ((message.chat.id != message.from_user.id) or (not currGame.isCreated) or (not currGame.isStarted)):
         return
     currGame.printOut(message.text, playerById[message.chat.id])
-
-@bot.message_handler(commands=['globalstats'])
-def getGlobalStats(message):
-    registerChat(message.chat.id)
-    registerPlayer(message.from_user)
-    globalStats.printOut(message.chat.id)
 
 class TimerThread(Thread):
     def __init__(self):
