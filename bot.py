@@ -68,7 +68,9 @@ class GlobalStats:
     def logMatchingDuelGame(self):
         self.cntOfMatchedDuelGames += 1
     
-    def logStartedPartyGame(self):
+    def logStartedPartyGame(self, listOfPlayers):
+        for player in listOfPlayers:
+            self.logPlayer(player)
         self.cntOfStartedPartyGames += 1
 
     def print(self, id):
@@ -662,7 +664,7 @@ class Game:
             self.startAmountOfCards = 5
             self.finishAmountOfCards = 9
         else:
-            globalStats.logStartedPartyGame()
+            globalStats.logStartedPartyGame(self.players)
             self.startAmountOfCards = 1
             self.finishAmountOfCards = 5
         try:
