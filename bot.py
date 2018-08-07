@@ -79,9 +79,11 @@ class GlobalStats:
         res += "Number of matched duel games " + str(self.cntOfMatchedDuelGames) + "\n"
         res += "Number of started party games " + str(self.cntOfStartedPartyGames) + "\n"
         res += "Number of find duel writings " + str(self.cntOfWritedFindDuel) + "\n"
+        print(res)
         try:
             bot.send_message(id, res)
         except Exception as e:
+            print("KEK")
             logging.info(str(e))
 
 globalStats = GlobalStats()
