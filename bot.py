@@ -1450,7 +1450,7 @@ def getText(message):
         return
     currGame.printOut(message.text, playerById[message.chat.id])
 
-@bot.message_handler(content_types=['globalstats'])
+@bot.message_handler(commands=['globalstats'])
 def getGlobalStats(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
