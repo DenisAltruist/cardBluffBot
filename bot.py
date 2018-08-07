@@ -73,7 +73,7 @@ class GlobalStats:
             self.logPlayer(player)
         self.cntOfStartedPartyGames += 1
 
-    def print(self, id):
+    def printOut(self, id):
         res = "Number of unique players: " + str(len(self.uniqPlayers)) + "\n"
         res += "Number of full played duel games: " + str(self.cntOfFullPlayedDuelGames) + "\n"
         res += "Number of matched duel games " + str(self.cntOfMatchedDuelGames) + "\n"
@@ -1454,7 +1454,7 @@ def getText(message):
 def getGlobalStats(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    globalStats.print(message.chat.id)
+    globalStats.printOut(message.chat.id)
 
 class TimerThread(Thread):
     def __init__(self):
