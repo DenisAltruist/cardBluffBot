@@ -44,6 +44,46 @@ playerById = dict()
 eventSet = []
 duelSearchQueue = []
 
+#global stats
+
+class GlobalStats:
+    def __init__(self):
+        self.uniqPlayers = []
+        self.cntOfWritedFindDuel = 0
+        self.cntOfFullPlayedDuelGames = 0
+        self.cntOfMatchedDuelGames = 0
+        self.cntOfStartedPartyGames = 0
+
+    def logPlayer(self, player):
+        if player not in self.uniqPlayers:
+            self.uniqPlayers.append(player)
+
+    def logSearchingDuel(self, player):
+        self.cntOfWritedFindDuel += 1
+        self.logPlayer(player)
+
+    def logFullPlayedDuelGame(self):
+        self.cntOfFullPlayedDuelGames += 1
+    
+    def logMatchingDuelGame(self):
+        self.cntOfMatchedDuelGames += 1
+    
+    def logStartedPartyGame(self):
+        self.cntOfStartedPartyGames += 1
+
+    def print(self, id):
+        res = "Number of unique players: " + str(len(self.uniqPlayers)) + "\n"
+        res += "Number of full played duel games: " + str(self.cntOfFullPlayedDuelGames) + "\n"
+        res += "Number of matched duel games " + str(self.cntOfMatchedDuelGames) + "\n"
+        res += "Number of started party games " + str(self.cntOfStartedPartyGames) + "\n"
+        res += "Number of find duel writings " + str(self.cntOfWritedFindDuel) + "\n"
+        try:
+            bot.send_message(id, res)
+        except Exception as e:
+            logging.info(str(e))
+
+globalStats = GlobalStats()
+
 class WebhookServer(object):
     @cherrypy.expose
     def index(self):
@@ -622,6 +662,7 @@ class Game:
             self.startAmountOfCards = 5
             self.finishAmountOfCards = 9
         else:
+            globalStats.logStartedPartyGame()
             self.startAmountOfCards = 1
             self.finishAmountOfCards = 5
         try:
@@ -818,6 +859,7 @@ class Game:
         self.isRegistered = False
         if self.numberOfPlayers == 2:
             time.sleep(1)
+            globalStats.logFullPlayedDuelGame()
             winner = self.alivePlayers[0]
             looser = self.players[0]
             if looser == winner:
@@ -1192,10 +1234,12 @@ def findDuel(message):
     player = playerById[message.from_user.id]
     if (message.chat.id != message.from_user.id) or (player in duelSearchQueue) or (player.isPlaying):
         return
+    globalStats.logSearchingDuel(player)
     try:
         bot.send_message(message.chat.id, "Starting opponent searching...\n" + "Write /abort to cancel")
     except Exception as e:
         logging.info(str(e))
+
     strDelta = message.text[10:]
     if len(message.text) == 9:
         delta = 10000
@@ -1209,6 +1253,7 @@ def findDuel(message):
     opponent = GetOpponentForDuel(player)
     if opponent is None:
         return
+    globalStats.logMatchingDuelGame()
     gamesByChatId[player.id] = DuelRateGame(message, player, opponent)
     gamesByChatId[opponent.id] = gamesByChatId[player.id]
     gamesByChatId[player.id].start()
@@ -1402,6 +1447,12 @@ def getText(message):
     if ((message.chat.id != message.from_user.id) or (not currGame.isCreated) or (not currGame.isStarted)):
         return
     currGame.printOut(message.text, playerById[message.chat.id])
+
+@bot.message_handler(content_types=['globalstats'])
+def getGlobalStats(message):
+    registerChat(message.chat.id)
+    registerPlayer(message.from_user)
+    globalStats.print(message.chat.id)
 
 class TimerThread(Thread):
     def __init__(self):
