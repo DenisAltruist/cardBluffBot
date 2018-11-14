@@ -1186,7 +1186,7 @@ def getHandsRu(message):
 def getHands(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    helplist = "To move just write combination command in chat."
+    helplist = "To move just write combination command in chat.\n"
     helplist += 'Hands in ascending order:\n'
     helplist += "0 - High card (example of move: /m 0K, kicker king)\n"
     helplist += "1 - One pair: (/m 18, pair of eights)\n"
