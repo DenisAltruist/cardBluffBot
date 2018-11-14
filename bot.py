@@ -1081,18 +1081,15 @@ def getHelp(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     rules = "Rules:\n"
-    rules += "The game consists of few rounds. In the start of the game, each player has one card. (Party game)\n"
-    rules += "In the moment of playing each player has from one to five cards only knows for him\n"
-    rules += "If you will have more than five cards - you will be a loser.\n"
-    rules += "There is some order of moves in each round. If player has to move, he has to say new hand(it has to be higher, than current)\n"
-    rules += "or say 'reveal' to check the current hand (/m - command to move, /r - command to 'reveal'). If player moves, he has to choose poker hand\n"
-    rules += "(you can find all hands and how to move using /hands), hand must be higher than the previous one. After this, the move passes to another player\n"
-    rules += "It will be a player who say 'reveal'. After that all players reveal their hands and round will be finished.\n"
-    rules += "If it will be a current hand, then the current player will get an additional card in new round.\n"
-    rules += "Else, the previous player will get an additional card in new round. The game goes until there is only one player.\n"
-    rules += "Also, if there are two players in game you will have five cars in begin instead of one card and you will loose after ten cards. (Duel game)\n"
-    rules += "There is new feature - you can use /b instead of /r - it means that current combination is the highest possible combination in this round (also if it's not one of highest).\n"
-    rules += "If it's true, that no one will give additional card in new round\n"
+    rules += "First of all, please press /start to give the ability for bot to send cards. \n\n"
+    rules += "There are two game modes - 'Duel' and 'Party'. They have minor differences in rules, let's start with party:\n\n"
+    rules += "In the begin of the game each player get one card, known only for him. Next, you will play round which result will be decisive to who will get an addition card in next round. Player, who got six cards wiil be eliminated from the game. Last survived player is the winner.\n\n"
+    rules += "In begin of each round is choosen random cyclic order of player moves (after last player in order first continue). The move is ranked poker combination, you have to increase rank of previous called combination (all combinations with ranks, and how to move you can find here - /hands). You can also refuse increasing and open all cards in round (/r). \n\n"
+    rules += "There are two outcomes after opening: if previous combination can be composed using ALL cards in the round, that you will be loser and get an addition card. Otherwise an addition card will be given to previous player in order. After opening the round is finished.\n\n"
+    rules += "Futhermore you have an ability to block (/b) last called combination, if you think that it's maximum possible combination along all combinations, which can be composed. In case of success no one will be given an addition card, otherwise - only you.\n\n"
+    rules += "In mode Duel play two players, and in begin of the game they have five cards and eliminated limit is ten cards (not six). Morever, game goes while differences in amount of cards at most 1. For example, if the score is 9-9 now, than the current round won't be final in the game.\n\n"
+    rules += "There is a rating for duel games (Elo with bonuses for winning streaks and losing streaks). To participate with other players write /findduel directly to bot and if other player want to play you will be matched.\n\n"
+    rules += "To start playing party games just add bot to chat, write /creategame, join with friends to lobby, use /startgame when all are joined and play. Note, that you can be only in one lobby at the moment. Good luck and see you in game"
     try:
         bot.send_message(message.chat.id, rules)
     except Exception as e:
@@ -1189,7 +1186,8 @@ def getHandsRu(message):
 def getHands(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    helplist = 'Hands in ascending order:\n'
+    helplist = "To move just write combination command in chat."
+    helplist += 'Hands in ascending order:\n'
     helplist += "0 - High card (example of move: /m 0K, kicker king)\n"
     helplist += "1 - One pair: (/m 18, pair of eights)\n"
     helplist += "2 - Two pairs: (/m 28J, two pairs of eights and jacks)\n"
