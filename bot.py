@@ -1080,15 +1080,22 @@ def prevmove(message):
 def getHelp(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    rules = "Rules:\n"
-    rules += "There are two game modes - 'Duel' and 'Party'. They have minor differences in rules, let's start with party:\n\n"
-    rules += "In the beginning of the game each player get one card, known only to him. Next, you will play round which result will be decisive to who will get an additional card in next round. Player, who got six cards will be eliminated from the game. Last survived player is the winner.\n\n"
-    rules += "In the beginning of each round is chosen random cyclic order of players moves (after last player in order, first player continues playing). The move is ranked poker combination, you have to increase rank of previous called combination (all combinations with ranks, and how to move you can find here - /hands). You can also refuse increasing and open all cards in round (/r). \n\n"
-    rules += "There are two outcomes after opening: if previous combination can be composed using some of cards from ALL cards in the round, that you will be loser and get an additional card. Otherwise an additional card will be given to previous player in order. After opening the round is finished. All players will get new cards according to amount.\n\n"
-    rules += "Furthermore you have an ability to block (/b) last combination, if you think that it's maximum possible combination along all combinations, which can be composed. In case of success no one will be given an additional card, otherwise - only you.\n\n"
-    rules += "In mode Duel play two players, and in the beginning of the game they have five cards and eliminated limit is ten cards (not six). Morever, game goes while differences in amount of cards at most 1. For example, if the score is 9-9 now, than the current round won't be final in the game.\n\n"
-    rules += "There is a rating for duel games (Elo with bonuses for winning streaks and losing streaks). To participate with other players write /findduel directly to bot and if other player want to play you will be matched.\n\n"
-    rules += "To start playing party games just add bot to chat, write /creategame, join with friends to lobby, use /startgame when all are joined and play. Note, that you can be only in one lobby at the one moment. Also note that all players have to start bot to recieve cards."
+    rules = """ Rules:
+There are two game modes - 'Duel' and 'Party'. They have minor differences in rules, let's start with party:
+
+In the beginning of the game each player get one card, known only to them. Next, you will play round which result will be decisive to who will get an additional card in next round. Player, who got six cards will be eliminated from the game. Last survived player is the winner.
+
+In the beginning of each round is chosen random cyclic order of players moves (after last player in order, first player continues playing). The move is ranked poker combination, you have to increase rank of previous called combination (all combinations with ranks, and how to move you can find here - /hands). You can also refuse increasing and open all cards in round (/r).
+
+There are two outcomes after opening: if previous combination can be composed using some of cards from ALL cards in the round, that you will be loser and get an additional card. Otherwise an additional card will be given to previous player in order. After opening the round is finished. All players will get new cards according to amount.
+
+Furthermore you have an ability to block (/b) last combination, if you think that it's maximum possible combination along all combinations, which can be composed. In case of success no one will be given an additional card, otherwise - only you.
+
+In mode Duel play two players, and in the beginning of the game they have five cards and eliminated limit is ten cards (not six). Morever, game goes while differences in amount of cards at most 1. For example, if the score is 9-9 now, than the current round won't be final in the game.
+
+There is a rating for duel games (Elo with bonuses for winning streaks and losing streaks). To participate with other players write /findduel directly to bot and if other player want to play you will be matched.
+
+To start playing party games just add bot to chat, write /creategame, join with friends to lobby, use /startgame when all are joined and play. Note, that you can be only in one lobby at the one moment. Also note that all players have to start bot to recieve cards."""
     try:
         bot.send_message(message.chat.id, rules)
     except Exception as e:
@@ -1098,17 +1105,26 @@ def getHelp(message):
 def getHelpRu(message):
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
-    rules = "Правила:\n"
-    rules += "1) Для начала отправьте боту в личные сообщение /start, чтобы он мог присылать вам ваши карты. \n\n"
-    rules += "2) Есть два основных режима игры - 'Duel' и 'Party'. Начнём с 'Party':\n\n"
-    rules += "а) В начале игры каждый участник получает по одной карте, которая известна только ему. Дальше будут разыгрываться раунды, по результатам которых будет определяться игрок, который получит дополнительную карту в новом раунде (игрок, который проиграл раунд). Игрок, который получил 6 карт, выбывает из игры. Кто остаётся последним — тот победил.\n\n"
-    rules += "Как проходит раунд: каждый раунд выбирается случайный порядок игроков, в соответствии с которым они будут ходить. Ход заключается в том, что игрок называет любую покерную комбинацию (посмотреть нумерацию комбинаций можно с помощью /hands_ru, а мастей — /suits), которая выше, чем предыдущая (если он ходит первым — то любую), либо он может сказать 'не верю' (/r) и вскрыть предыдущую комбинацию.\n\n" 
-    rules += "Рано или поздно кто-то вскроет текущую комбинацию, так как они повышаются. При вскрытии каждый игрок раскрывает свои карты, и последняя названная комбинации ищется среди всех карт, которые были на руках у игроков в этом раунде. Если она присутствует, то игроку, который сказал 'не верю' будет дана дополнительная карта в новом раунде, а иначе дополнительная карта будет дана игроку, заявившему комбинацию. После вскрытия, колода карт перетасовывается, и каждому игроку раздают столько карт, сколько раундов он проиграл + одна изначальная.\n\n"
-    rules += "На самом деле кроме вскрытия есть возможность блокировать комбинацию (/b). Это значит, что вы говорите, что текущая комбинация - максимальна среди всех возможных в данной раздаче (она должна присутствовать, блок работает даже если максимальных комбинаций несколько). Если это действительно так, то никто не получит карты в новом раунде. Иначе, карту получает игрок сыгравший /b\n\n"
-    rules += "б) Режим 'Duel' отличается только тем, что играют два игрока, а первый ход даётся игрокам по очереди. Изначально у обоих игроков по 5 карт, а количество карт для вылета — 10 (если счет 9-9, то игра идёт до преимущества в 2 очка). Для режима 'Duel' есть рейтинг игроков (Эло с бонусами за винстрик и штрафами за лузстрик) который можно посмотреть используя /top (если ввести /top 5, то бот покажет 5 лучших игроков).\n" 
-    rules += "Для того, чтобы играть рейтинговые игры, нужно написать /findduel боту в личные сообщения (можно играть и дуэль в чате, но тогда она будет нерейтинговой), он начнёт поиск соперника (можно написать /findduel x, где x - число и среди соперников будут искаться только те, у которых рейтинг отклоняется не больше чем на x от вашего)\n\n"
-    rules += "3) Чтобы начать игру, используйте /creategame, затем ждите, пока присоединятся игроки, и используйте /startgame для начала. Остальные комбинации можно посмотреть, написав /.\n\n"
-    rules += "P.S. если хотите играть хоть с кем-нибудь в пати режиме, то вот чат с игроками, welcome:\nhttps://t.me/joinchat/FxJb5hGvQ0Y-t6XiRLNCnw"
+    rules = """ Правила:
+1) Для начала отправьте боту в личные сообщение /start, чтобы он мог присылать вам ваши карты.
+
+2) Есть два основных режима игры - 'Duel' и 'Party'. Начнём с 'Party':
+
+а) В начале игры каждый участник получает по одной карте, которая известна только ему. Дальше будут разыгрываться раунды, по результатам которых будет определяться игрок, который получит дополнительную карту в новом раунде (игрок, который проиграл раунд). Игрок, который получил 6 карт, выбывает из игры. Кто остаётся последним — тот победил.
+
+Как проходит раунд: каждый раунд выбирается случайный порядок игроков, в соответствии с которым они будут ходить. Ход заключается в том, что игрок называет любую покерную комбинацию (посмотреть нумерацию комбинаций можно с помощью /hands_ru, а мастей — /suits), которая выше, чем предыдущая (если он ходит первым — то любую), либо он может сказать 'не верю' (/r) и вскрыть предыдущую комбинацию.
+
+Рано или поздно кто-то вскроет текущую комбинацию, так как они повышаются. При вскрытии каждый игрок раскрывает свои карты, и последняя названная комбинации ищется среди всех карт, которые были на руках у игроков в этом раунде. Если она присутствует, то игроку, который сказал 'не верю' будет дана дополнительная карта в новом раунде, а иначе дополнительная карта будет дана игроку, заявившему комбинацию. После вскрытия, колода карт перетасовывается, и каждому игроку раздают столько карт, сколько раундов он проиграл + одна изначальная.
+
+На самом деле кроме вскрытия есть возможность блокировать комбинацию (/b). Это значит, что вы говорите, что текущая комбинация - максимальна среди всех возможных в данной раздаче (она должна присутствовать, блок работает даже если максимальных комбинаций несколько). Если это действительно так, то никто не получит карты в новом раунде. Иначе, карту получает игрок сыгравший /b
+
+б) Режим 'Duel' отличается только тем, что играют два игрока, а первый ход даётся игрокам по очереди. Изначально у обоих игроков по 5 карт, а количество карт для вылета — 10 (если счет 9-9, то игра идёт до преимущества в 2 очка). Для режима 'Duel' есть рейтинг игроков (Эло с бонусами за винстрик и штрафами за лузстрик) который можно посмотреть используя /top (если ввести /top 5, то бот покажет 5 лучших игроков).
+
+Для того, чтобы играть рейтинговые игры, нужно написать /findduel боту в личные сообщения (можно играть и дуэль в чате, но тогда она будет нерейтинговой), он начнёт поиск соперника (можно написать /findduel x, где x - число и среди соперников будут искаться только те, у которых рейтинг отклоняется не больше чем на x от вашего)
+
+3) Чтобы начать игру, используйте /creategame, затем ждите, пока присоединятся игроки, и используйте /startgame для начала. Остальные комбинации можно посмотреть, написав /.
+
+P.S. если хотите играть хоть с кем-нибудь в пати режиме, то вот чат с игроками, welcome:\nhttps://t.me/joinchat/FxJb5hGvQ0Y-t6XiRLNCnw"""
     try:
         bot.send_message(message.chat.id, rules)
     except Exception as e:
