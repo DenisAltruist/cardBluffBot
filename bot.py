@@ -12,7 +12,6 @@ import time
 import sqlite3 as lite
 import cherrypy
 import copy
- 
 
 
 from telebot import types
@@ -943,6 +942,8 @@ class DuelRateGame(Game):
 
 @bot.message_handler(commands=['cancel'])
 def cancel(message):
+    if message.from_user.is_bot:
+        return
     global gamesByChatId
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
@@ -1052,9 +1053,10 @@ def isAdmin(message):
     status = bot.get_chat_member(message.chat.id, message.from_user.id).status
     return (status == 'creator') or (status == 'administrator')
 
-
 @bot.message_handler(commands=['start'])
 def start(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     try:
@@ -1067,6 +1069,8 @@ def start(message):
 
 @bot.message_handler(commands=['prevmove'])
 def prevmove(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     curGame = gamesByChatId[message.chat.id]
@@ -1078,6 +1082,8 @@ def prevmove(message):
 
 @bot.message_handler(commands=['help'])
 def getHelp(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     rules = """ Rules:
@@ -1103,6 +1109,8 @@ To start playing party games just add bot to chat, write /creategame, join with 
 
 @bot.message_handler(commands=['help_ru'])
 def getHelpRu(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     rules = """ Правила:
@@ -1133,6 +1141,8 @@ P.S. если хотите играть хоть с кем-нибудь в па�
 
 @bot.message_handler(commands=['stats'])
 def getStats(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     if not(message.reply_to_message is None):
@@ -1152,6 +1162,8 @@ def getStats(message):
 
 @bot.message_handler(commands=['kick'])
 def kick(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     if message.reply_to_message is None or not isAdmin(message):
@@ -1167,6 +1179,8 @@ def kick(message):
 
 @bot.message_handler(commands=['suits'])
 def getSuits(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     helplist = 'Suits:\n'
@@ -1179,6 +1193,8 @@ def getSuits(message):
 
 @bot.message_handler(commands=['hands_ru'])
 def getHandsRu(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     helplist = 'Комбинации в возрастающем порядке:\n'
@@ -1199,6 +1215,8 @@ def getHandsRu(message):
 
 @bot.message_handler(commands=['hands'])
 def getHands(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     helplist = "To move just write combination command in chat.\n"
@@ -1220,6 +1238,8 @@ def getHands(message):
 
 @bot.message_handler(commands=['creategame'])
 def creategame(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     keyboard = types.InlineKeyboardMarkup()
@@ -1242,6 +1262,8 @@ def GetOpponentForDuel(player):
 
 @bot.message_handler(commands=['findduel'])
 def findDuel(message):
+    if message.from_user.is_bot:
+        return
     global gamesByChatId
     global playerById
     registerChat(message.chat.id)
@@ -1276,6 +1298,8 @@ def findDuel(message):
 
 @bot.message_handler(commands=['abort'])
 def abort(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     player = playerById[message.from_user.id]
@@ -1296,6 +1320,8 @@ def inline(c):
 
 @bot.message_handler(commands=['leavegame'])
 def leavegame(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     currGame = gamesByChatId[message.chat.id]
@@ -1309,12 +1335,16 @@ def leavegame(message):
 
 @bot.message_handler(commands=['countcards'])
 def countcards(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     gamesByChatId[message.chat.id].printNumberOfCards()
 
 @bot.message_handler(commands=['startgame'])
 def startgame(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     currGame = gamesByChatId[message.chat.id]
@@ -1328,6 +1358,8 @@ def startgame(message):
 
 @bot.message_handler(commands=['tr'])
 def getTime(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     currGame = gamesByChatId[message.chat.id]
@@ -1338,6 +1370,8 @@ def getTime(message):
 
 @bot.message_handler(commands=['top'])
 def getTop(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     currText = message.text[5:]
@@ -1363,6 +1397,8 @@ def getTop(message):
 
 @bot.message_handler(commands=['r'])
 def getmsg(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     global gamesByChatId
@@ -1390,6 +1426,8 @@ def getmsg(message):
 
 @bot.message_handler(commands=['b'])
 def getBlock(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     global gamesByChatId
@@ -1421,6 +1459,8 @@ def getBlock(message):
 
 @bot.message_handler(commands=['m'])
 def getmessage(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     global gamesByChatId
@@ -1455,12 +1495,16 @@ def getmessage(message):
 
 @bot.message_handler(commands=['globalstats'])
 def getGlobalStats(message):
+    if message.from_user.is_bot:
+        return
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
     globalStats.printOut(message.chat.id)
 
 @bot.message_handler(content_types=['text'])
 def getText(message):
+    if message.from_user.is_bot:
+        return
     global gamesByChatId
     registerChat(message.chat.id)
     registerPlayer(message.from_user)
