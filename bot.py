@@ -574,7 +574,7 @@ class Game:
         if self.players.count(player) == 0:
             self.printOut(self.getName(player) + ", you haven't joined yet")
             return
-        if player not in self.players:
+        if player not in self.alivePlayers:
             return
         if self.isStarted:
             self.removeMoveFromEventSet()
