@@ -1535,14 +1535,14 @@ class MainThread(Thread):
         initializeFromDatabase()
         initializeLogger()
         bot.remove_webhook()
-        bot.set_webhook(url=config.WEBHOOK_URL_BASE + config.WEBHOOK_URL_PATH,
-                        certificate=open(config.WEBHOOK_SSL_CERT, 'r'))
+        bot.set_webhook(url=config.WEBHOOK_URL_BASE + config.WEBHOOK_URL_PATH)
+                        # certificate=open(config.WEBHOOK_SSL_CERT, 'r'))
         cherrypy.config.update({
             'server.socket_host': config.WEBHOOK_LISTEN,
             'server.socket_port': config.WEBHOOK_PORT,
-            'server.ssl_module': 'builtin',
-            'server.ssl_certificate': config.WEBHOOK_SSL_CERT,
-            'server.ssl_private_key': config.WEBHOOK_SSL_PRIV
+            # 'server.ssl_module': 'builtin',
+            # 'server.ssl_certificate': config.WEBHOOK_SSL_CERT,
+            # 'server.ssl_private_key': config.WEBHOOK_SSL_PRIV
         })
         cherrypy.quickstart(WebhookServer(), config.WEBHOOK_URL_PATH, {'/': {}})
         
