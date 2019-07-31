@@ -18,5 +18,5 @@ WEBHOOK_LISTEN = '0.0.0.0'  # На некоторых серверах прид�
 WEBHOOK_SSL_CERT = './cert.pem'  # Путь к сертификату
 WEBHOOK_SSL_PRIV = './private.key'  # Путь к приватному ключу
 
-WEBHOOK_URL_BASE = "http://%s:%s" % (WEBHOOK_HOST, WEBHOOK_PORT)
+WEBHOOK_URL_BASE = "http://%s:443" % (WEBHOOK_HOST, WEBHOOK_PORT)
 WEBHOOK_URL_PATH = "/%s/" % TOKEN
